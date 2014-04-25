@@ -1,0 +1,5 @@
+priv
+deps
+test/sites/*/run
+test/sites/*/pid
+test/sites/*/out
