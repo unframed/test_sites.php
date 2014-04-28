@@ -1,5 +1,7 @@
 test_sites.php
 ===
+[![Build Status](https://travis-ci.org/unframed/test_sites.php.svg?branch=master)](https://travis-ci.org/unframed/test_sites.php)
+
 Continuously test acceptance of PHP/MySQL sites.
 
 Synopsis
