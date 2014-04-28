@@ -18,12 +18,15 @@ else:
 # functions
 
 def test_sites_mysql_create (name, user, password):
-    MySQLdb.connect(
+    db = MySQLdb.connect(
         host = "localhost", 
         user = "root", 
         passwd = TEST_SITES_CONFIG.get(u'mysqlRootPass', u'')
-        ).cursor().execute( 
-        "DROP DATABASE IF EXISTS {0} ;\n"
+        )
+    db.cursor().execute( 
+        "DROP DATABASE IF EXISTS {0} ;\n".format(name)
+        )
+    db.cursor().execute( 
         "CREATE DATABASE {0} ;\n"
         "GRANT ALL PRIVILEGES ON {0}.* TO "
         "{1}@localhost IDENTIFIED BY '{2}' ;\n"
