@@ -6,6 +6,9 @@ php:
   # using major version aliases
   - 5.2
 
+install:
+  - sudo apt-get install -qq python-mysqldb
+
 before_script: 
   - npm install uglify-js
 
