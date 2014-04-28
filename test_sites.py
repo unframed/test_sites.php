@@ -8,6 +8,8 @@ def file_exists(filename):
 def shell_exec(command):
     return subprocess.check_output(command, shell=True)
 
+# configuration
+
 if file_exists('priv/test_sites.json'):
     TEST_SITES_CONFIG = json.loads(open('priv/test_sites.json').read())
 else:
@@ -15,28 +17,17 @@ else:
 
 # functions
 
-def test_sites_mysql_root():
-    return MySQLdb.connect (
+def test_sites_mysql_create (name, user, password):
+    MySQLdb.connect(
         host = "localhost", 
         user = "root", 
-        passwd = TEST_SITES_CONFIG.get('mysqlRootPass', '')
-        )
-
-def test_sites_mysql_query(db, sql):
-    c = db.cursor()
-    c.execute(sql)
-    more = True
-    while more:
-        c.fetchall()
-        more = c.nextset()
-
-def test_sites_mysql_create (name, user, password):
-    return test_sites_mysql_query(
-        test_sites_mysql_root(), 
+        passwd = TEST_SITES_CONFIG.get(u'mysqlRootPass', u'')
+        ).cursor().execute( 
         "DROP DATABASE IF EXISTS {0} ;\n"
         "CREATE DATABASE {0} ;\n"
         "GRANT ALL PRIVILEGES ON {0}.* TO "
         "{1}@localhost IDENTIFIED BY '{2}' ;\n"
+        "FLUSH PRIVILEGES ;\n"
         .format(name, user, password)
         )
 
@@ -89,8 +80,8 @@ class TestSite:
         self.name = name
         self.path = 'test/sites/' + self.name
         self.options = {
-            "httpHost": "127.0.0.1:8089",
-            "testUnits": []
+            u"httpHost": u"127.0.0.1:8089",
+            u"testUnits": []
         }
         config = self.path + '/test_sites.json'
         if file_exists(config):
@@ -145,7 +136,7 @@ class TestSite:
         return shell_exec('rm {0}/run -rf'.format(self.path))
 
     def getHttpHost (self):
-        return self.options.get('httpHost', 'localhost:8089')
+        return self.options.get(u'httpHost', u'localhost:8089')
 
     def phpServerStart (self):
         return test_sites_server_start(self.path, self.getHttpHost())
@@ -189,6 +180,7 @@ def test_sites_up (site):
 
     site.mysqlSetup()
     site.runSetup()
+    """
     pid = test_sites_server_start(site.path, site.getHttpHost())
     if pid == False:
         test_sites_error('could not fork a PHP server')
@@ -196,6 +188,7 @@ def test_sites_up (site):
 
     else:
         open(site.path+'/pid', 'w').write('{0}'.format(pid))
+    """
 
 def test_sites_start (site):
     if file_exists(site.path+'/pid'):
@@ -231,7 +224,7 @@ def test_sites_dump (site):
     out_dir = site.path + '/out'
     if not file_exists(out_dir):
         os.mkdir(out_dir)
-    test_sites_mysql_dump(site.name)
+    site.mysqlDump()
     test_sites_run_dump(site.path)
 
 def test_sites_down (site):
@@ -251,15 +244,12 @@ def test_sites_test (site):
         test_sites_up(site)
     if not file_exists(site.path+'/pid'):
         test_sites_start(site)
-    units = site.options.get('testUnits', [])
+    units = site.options.get(u'testUnits', [])
     for script in units:
         if script.endswith('.js'):
             shell_exec(
-                'deps/casperjs/bin/casperjs '
-                +'test/units/'+script
-                +' --name='+site.name
-                +' --host='+site.getHttpHost()
-                +' --mysqluser='+site.getMySQLUser()
+                'deps/casperjs/bin/casperjs test/units/{0} --name={1} --host={2} --mysqluser={3}'
+                .format(script, site.name, site.getHttpHost(), site.getMySQLUser())
                 )
         else:
             shell_exec(script)
