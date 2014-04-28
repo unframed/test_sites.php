@@ -1,1 +1,1 @@
-/usr/bin/php src/test_sites.php $1 $2 $3
+python test_sites.py $1 $2

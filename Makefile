@@ -1,12 +1,12 @@
 test: ugly
-	php src/test_sites.php run wordpress
+	./test_site run wordpress
 
 ugly: pull
+	uglifyjs test/units/wp_install.js --lint > /dev/null
 
 DEPS = \
 	deps \
 	deps/wordpress \
-	deps/test-more-php \
 	deps/casperjs
 
 pull: ${DEPS}
@@ -21,9 +21,6 @@ deps/wordpress:
 		https://github.com/WordPress/WordPress.git \
 		deps/wordpress
 
-deps/test-more-php:
-	svn checkout http://test-more-php.googlecode.com/svn/trunk/ deps/test-more-php
-
 deps/casperjs:
 	git clone git@github.com:n1k0/casperjs.git deps/casperjs
 
@@ -34,7 +31,7 @@ clean:
 
 install:
 	sudo apt-get install \
-		wget git php5 python \
+		wget git php5 python python-mysqldb \
 		mysql-client php5-mysql mysql-server \
 		# nodejs npm phantomjs
 	sudo mysql_secure_installation
