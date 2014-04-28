@@ -66,7 +66,7 @@ def test_sites_run_teardown (path):
 
 def test_sites_server_start (path, host):
     return subprocess.Popen([
-        '/usr/bin/php',
+        'php',
         '-S', host, 
         '-t', path + '/run'
         ]).pid
