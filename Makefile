@@ -22,7 +22,7 @@ deps/wordpress:
 		deps/wordpress
 
 deps/casperjs:
-	git clone git@github.com:n1k0/casperjs.git deps/casperjs
+	git clone https://github.com/n1k0/casperjs.git deps/casperjs
 
 clean:
 	rm deps/* -rf
