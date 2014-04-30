@@ -183,15 +183,6 @@ def test_sites_up (site):
 
     site.mysqlSetup()
     site.runSetup()
-    """
-    pid = test_sites_server_start(site.path, site.getHttpHost())
-    if pid == False:
-        test_sites_error('could not fork a PHP server')
-        exit(4);
-
-    else:
-        open(site.path+'/pid', 'w').write('{0}'.format(pid))
-    """
 
 def test_sites_start (site):
     if file_exists(site.path+'/pid'):

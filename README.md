@@ -6,26 +6,35 @@ Continuously test acceptance of PHP/MySQL sites.
 
 Synopsis
 ---
-Create a the `test/sites` and `test/units` directories, add a `test_sites.json` configuration file in the directory `priv` if it exists.
+Create a the `test/sites` and `test/units` directories.
 
-### test_sites add
+You can specify the MySQL `root` user's password and the test MySQL user name by adding a `test_sites.json` configuration file in the directory `priv`.
 
-If it does not exists, create a new `wordpress` directory in `test/sites` with a JSON configuration file named `test_sites.json`.
+For instance :
 
-~~~bash
-./test_sites add wordpress
+~~~json
+{
+    "mysqlRootPass": "password",
+    "mysqlTestUser": "test"
+}
 ~~~
 
-...
+For each site, create a directory in `test/sites` and add a  `test_sites.json` configuration file in it.
+
+For instance :
 
 ~~~json
 {
     "httpHost": "127.0.0.1:8089",
-    "testUnits": []
+    "gitSource": "deps/wordpress",
+    "gitBranch": "3.8.3",
+    "testUnits": [
+        "wp_install.js"
+        ]
 }
 ~~~
 
-...
+This site will: use a shared repository found in `deps/wordpress` to checkout branch `3.8.3` as the `run` directory; be served by a PHP built-in server listening on `127.0.0.1:8089`; and the script `test/units/wp_install.js` will be executed by Casperjs when testing the site.
 
 ### test_sites run
 
@@ -38,8 +47,6 @@ Setup a site, run its test units, dump its database and tear it down.
 This is equivalent to :
 
 ~~~bash
-./test_sites up wordpress
-./test_sites start wordpress
 ./test_sites test wordpress
 ./test_sites stop wordpress
 ./test_sites dump wordpress
@@ -58,13 +65,6 @@ This is equivalent to :
 
 ...
 
-~~~bash
-./test_sites up wordpress
-./test_sites start wordpress
-./test_sites test wordpress
-~~~
-
-...
 
 ### test_sites up
 
