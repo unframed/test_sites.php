@@ -21,7 +21,7 @@ For instance :
 
 For each site, create a directory in `test/sites` and add a  `test_sites.json` configuration file in it.
 
-For instance :
+This project includes a WordPress sample site in `test/sites/wordpress` :
 
 ~~~json
 {
@@ -36,57 +36,47 @@ For instance :
 
 This site will: use a shared repository found in `deps/wordpress` to checkout branch `3.8.3` as the `run` directory; be served by a PHP built-in server listening on `127.0.0.1:8089`; and the script `test/units/wp_install.js` will be executed by Casperjs when testing the site.
 
-### test_sites run
+### Run
 
-Setup a site, run its test units, dump its database and tear it down.
+Setup a site, start its server, run its test units, stop the server, dump its database and tear down the site.
 
 ~~~bash
 ./test_sites run wordpress
 ~~~
 
-This is equivalent to :
+Use this command for continuous integration.
 
-~~~bash
-./test_sites test wordpress
-./test_sites stop wordpress
-./test_sites dump wordpress
-./test_sites down wordpress
-~~~
+### Test
 
-...
-
-### test_sites test
-
-...
+Setup a site and start its server if not allready up, run its test units.
 
 ~~~bash
 ./test_sites test wordpress
 ~~~
 
-...
+Use this command if you want to test a site repeatedly or inspect its files and database afterwards.
 
+### Up
 
-### test_sites up
-
-Create the site's database and setup its `run` directory :
+Create the site's database, if the file exists decompress and import `mysql.zip` into that new database, create a `run` directory, check out a branch of a shared git repository if specified in the configuration, if it exists decompress the content of `run.zip` :
 
 ~~~bash
 ./test_sites up wordpress
 ~~~
 
-...
+Use this command if you want to inspect a site before testing it.
 
-### test_sites start
+### Start
 
-Start the builtin PHP server :
+Start the builtin PHP server. For instance, to restart the `wordpress` site :
 
 ~~~bash
 ./test_sites start wordpress
 ~~~
 
-...
+Returns an error if the site is already running or has not been setup.
 
-### test_sites stop
+### Stop
 
 Stop the builtin PHP server :
 
@@ -94,19 +84,19 @@ Stop the builtin PHP server :
 ./test_sites stop wordpress
 ~~~
 
-...
+Returns an error if the site is not running.
 
-### test_sites dump
+### Dump
 
-Dump the database to a compressed archive named `mysql.zip`in the site's `out` folder.
+Dump the compressd database in `out/mysql.zip`, compress the new or updated files in in `out/run.zip`.
 
 ~~~bash
 ./test_sites dump wordpress
 ~~~
 
-If the site's `run` folder is a git repository, saves the ouput of `git status` to `out/git_status`.
+Use this command to dump a site's state for further testing.
 
-### test_sites down
+### Down
 
 Teardown the site :
 
