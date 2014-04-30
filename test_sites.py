@@ -57,7 +57,7 @@ def test_sites_git_checkout (path, source, branch):
 def test_sites_run_dump (path):
     if file_exists(path+'/run/.git'):
         return shell_exec(
-            'cd {0}/run; git status > ../out/git_status_down'
+            'cd {0}/run; git status -s > ../out/git_status'
             .format(path)
             )
 
@@ -131,7 +131,7 @@ class TestSite:
             shell_exec('cp -r {0}/www/* {0}/run'.format(self.path))
         if file_exists(self.path+'/run/.git'):
             shell_exec(
-                'cd {0}/run; git status > ../out/git_status_up'
+                'cd {0}/run; git status -s > ../out/git_status_up'
                 .format(self.path)
                 )
 
