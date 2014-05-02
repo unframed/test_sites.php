@@ -8,12 +8,12 @@ def file_exists(filename):
 def shell_exec(command):
     return subprocess.check_output(command, shell=True)
 
-# configuration
+# project's private configuration
 
 if file_exists('priv/test_sites.json'):
-    CONFIG = json.loads(open('priv/test_sites.json').read())
+    _CONFIG = json.loads(open('priv/test_sites.json').read())
 else:
-    CONFIG = {}
+    _CONFIG = {}
 
 # functions: Units (than can be tested simply)
 
@@ -21,7 +21,7 @@ def mysql_create (name, user, password):
     db = MySQLdb.connect(
         host = "localhost", 
         user = "root", 
-        passwd = CONFIG.get(u'mysqlRootPass', u'')
+        passwd = _CONFIG.get(u'mysqlRootPass', u'')
         )
     db.cursor().execute( 
         "DROP DATABASE IF EXISTS {0} ;\n".format(name)
@@ -34,20 +34,16 @@ def mysql_create (name, user, password):
         .format(name, user, password)
         )
 
-def mysql_import (path, user, password, name, host):
+def mysql_import (path, user, password, name, pipe='|'):
     return shell_exec(
-        'unzip -p {0}/mysql.zip'
-        ' | sed s,127.0.0.1:80,{4},g'
-        ' | mysql -u {1} --password="{2}" {3}'
-        .format(path, user, password, name, host)
+        'unzip -p {0}/mysql.zip {4} mysql -u {1} --password="{2}" {3}'
+        .format(path, user, password, name, pipe)
         )
 
-def mysql_dump (path, user, password, name, host):
+def mysql_dump (path, user, password, name, pipe='|'):
     return shell_exec(
-        'mysqldump -u {1} -p{2} {3}'
-        ' | sed s,{4},127.0.0.1:80,g'
-        ' | zip {0}/out/mysql.zip - '
-        .format(path, user, password, name, host)
+        'mysqldump -u {1} -p{2} {3} {4} zip {0}/out/mysql.zip - '
+        .format(path, user, password, name, pipe)
         )
 
 def git_checkout (path, source, branch):
@@ -65,7 +61,7 @@ def git_add_untracked (path):
 
 def git_add_updated (path):
     status = shell_exec('cd {0}/run; git status -s'.format(path))
-    for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
+    for updated in re.findall(r"(?:A |M | A| M) (.+?)\n", status):
         shell_exec('cd {0}/run; git add {1}'.format(path, updated))
 
 def git_commit (path):
@@ -76,7 +72,7 @@ def git_commit (path):
 def run_dump (path):
     git_add_untracked(path)
     status = shell_exec('cd {0}/run; git status -s'.format(path))
-    for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
+    for updated in re.findall(r"(?:A |M | A| M) (.+?)\n", status):
         shell_exec('cd {0}; zip out/run.zip run/{1}'.format(path, updated))
 
 def run_teardown (path):
@@ -117,12 +113,14 @@ class TestSite:
 
     def mysqlImport (self):
         return mysql_import(
-            self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
+            self.path, self.getMySQLUser(), 'dummy', self.name, 
+            ' | sed s,TEST_SITES_HOST,{0},g | '.format(self.getHttpHost())
             )
 
     def mysqlDump (self):
         return mysql_dump(
-            self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
+            self.path, self.getMySQLUser(), 'dummy', self.name, 
+            ' | sed s,{0},TEST_SITES_HOST,g | '.format(self.getHttpHost())
             )
 
     def mysqlSetup (self):
@@ -145,9 +143,9 @@ class TestSite:
             shell_exec('cd {0}/run; git init')
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
-        git_add_untracked(site.path)
-        git_add_updated(site.path)
-        git_commit(site.path)
+        git_add_untracked(self.path)
+        git_add_updated(self.path)
+        git_commit(self.path)
 
     def runTeardown (self):
         return shell_exec('rm {0}/run -rf'.format(self.path))
@@ -158,7 +156,7 @@ class TestSite:
     def phpServerStart (self):
         pid = server_start(self.path, self.getHttpHost())
         if pid:
-            open(site.path+'/pid', 'w').write('{0}'.format(pid))
+            open(self.path+'/pid', 'w').write('{0}'.format(pid))
             return True
 
         return False
@@ -174,55 +172,45 @@ class TestSite:
 
 # commands
 
-def error (message):
+def error (code, message):
     print ("! "+message+"\r\n")
+    exit (code)
 
 def help ():
     print ("see: https://github.com/unframed/test_sites.php\n")
 
-def exists (argv):
-    if not len(argv) > 2:
-        error('missing site name')
-        exit(1)
-
-    elif not file_exists('test/sites/'+argv[2]):
-        error('site does not exist')
-        exit(2)
+def exists (name):
+    if not file_exists('test/sites/'+name):
+        error(1, 'site does not exist')
 
     else:
-        return argv[2];
+        return name;
 
 def up (site):
     run_dir = site.path+'/run'
     if file_exists(run_dir):
-        error('site is already up')
-        exit(3)
+        error(2, 'site is already up')
 
     site.mysqlSetup()
     site.runSetup()
 
 def start (site):
     if file_exists(site.path+'/pid'):
-        error('site may be running, cannot start')
-        exit(6)
+        error(3, 'site may be running, cannot start')
 
     if not file_exists(site.path+'/run'):
-        error('site is down, cannot start')
-        exit(7)
+        error(4, 'site is down, cannot start')
 
     if not site.phpServerStart():
-        error('could not fork a PHP server')
-        exit(8)
+        error(5, 'could not fork a PHP server')
 
 def stop (site):
     if not file_exists(site.path+'/run'):
-        error('site is down, cannot stop')
-        exit(9)
+        error(6, 'site is down, cannot stop')
 
     pid_file = site.path+'/pid';
     if not file_exists(pid_file):
-        error('site has already stopped')
-        exit(10)
+        error(7, 'site has already stopped')
 
     site.phpServerStop()
 
@@ -236,8 +224,7 @@ def dump (site):
 
 def down (site):
     if not file_exists(site.path+'/run'):
-        error('site is already down')
-        exit(5)
+        error(8, 'site is already down')
 
     pid_file = site.path+'/pid'
     if file_exists(pid_file):
@@ -268,8 +255,7 @@ def run (site):
     down(site)
 
 def unknown (site):
-    error('unknwon command')
-    exit(11)
+    error(9, 'unknwon command')
 
 COMMANDS = {
     'up': up,
@@ -282,13 +268,18 @@ COMMANDS = {
     'help': help 
 }
 
-if __name__ == '__main__':
+def cli(factory):
     import sys
     if not len(sys.argv) > 1:
-        error('missing command')
-        exit(12)
+        error(10, 'missing command')
+
+    if not len(sys.argv) > 2:
+        error(11, 'missing site name')
 
     command = sys.argv[1]
-    site = TestSite(exists(sys.argv))
+    site = factory(exists(sys.argv[2]))
     COMMANDS.get(command, unknown)(site)
-    exit(0);
+    sys.exit(0);
+
+if __name__ == '__main__':
+    cli(TestSite)
