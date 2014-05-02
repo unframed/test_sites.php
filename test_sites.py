@@ -11,17 +11,17 @@ def shell_exec(command):
 # configuration
 
 if file_exists('priv/test_sites.json'):
-    TEST_SITES_CONFIG = json.loads(open('priv/test_sites.json').read())
+    CONFIG = json.loads(open('priv/test_sites.json').read())
 else:
-    TEST_SITES_CONFIG = {}
+    CONFIG = {}
 
-# functions
+# functions: Units (than can be tested simply)
 
-def test_sites_mysql_create (name, user, password):
+def mysql_create (name, user, password):
     db = MySQLdb.connect(
         host = "localhost", 
         user = "root", 
-        passwd = TEST_SITES_CONFIG.get(u'mysqlRootPass', u'')
+        passwd = CONFIG.get(u'mysqlRootPass', u'')
         )
     db.cursor().execute( 
         "DROP DATABASE IF EXISTS {0} ;\n".format(name)
@@ -34,7 +34,7 @@ def test_sites_mysql_create (name, user, password):
         .format(name, user, password)
         )
 
-def test_sites_mysql_import (path, user, password, name, host):
+def mysql_import (path, user, password, name, host):
     return shell_exec(
         'unzip -p {0}/mysql.zip'
         ' | sed s,127.0.0.1:80,{4},g'
@@ -42,7 +42,7 @@ def test_sites_mysql_import (path, user, password, name, host):
         .format(path, user, password, name, host)
         )
 
-def test_sites_mysql_dump (path, user, password, name, host):
+def mysql_dump (path, user, password, name, host):
     return shell_exec(
         'mysqldump -u {1} -p{2} {3}'
         ' | sed s,{4},127.0.0.1:80,g'
@@ -50,7 +50,7 @@ def test_sites_mysql_dump (path, user, password, name, host):
         .format(path, user, password, name, host)
         )
 
-def test_sites_git_checkout (path, source, branch):
+def git_checkout (path, source, branch):
     return shell_exec(
         'git clone --shared --no-checkout {0} {1}/run ;'
         ' cd {1}/run ;'
@@ -58,39 +58,39 @@ def test_sites_git_checkout (path, source, branch):
         .format(source, path, branch)
         )
 
-def test_sites_git_add_untracked (path):
+def git_add_untracked (path):
     status = shell_exec('cd {0}/run; git status -s'.format(path))
     for untracked in re.findall(r"[?]{2} (.+?)\n", status):
         shell_exec('cd {0}/run; git add {1}'.format(path, untracked))
 
-def test_sites_git_add_updated (path):
+def git_add_updated (path):
     status = shell_exec('cd {0}/run; git status -s'.format(path))
     for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
         shell_exec('cd {0}/run; git add {1}'.format(path, updated))
 
-def test_sites_git_commit (path):
+def git_commit (path):
     status = shell_exec('cd {0}/run; git status -s'.format(path))
     if status:
         shell_exec('cd {0}/run; git commit -m "setup"'.format(path))
 
-def test_sites_run_dump (path):
-    test_sites_git_add_untracked(path)
+def run_dump (path):
+    git_add_untracked(path)
     status = shell_exec('cd {0}/run; git status -s'.format(path))
     for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
         shell_exec('cd {0}; zip out/run.zip run/{1}'.format(path, updated))
 
-def test_sites_run_teardown (path):
+def run_teardown (path):
     shell_exec('rm {0}/run -rf'.format(path))
     return True
 
-def test_sites_server_start (path, host):
+def server_start (path, host):
     return subprocess.Popen(['php', '-S', host, '-t', path + '/run']).pid
 
-def test_sites_server_stop (pid):
+def server_stop (pid):
     os.kill(pid, 9)
     return True
 
-# OOP
+# API
 
 class TestSite:
 
@@ -109,19 +109,19 @@ class TestSite:
         return self.options.get('mysqlTestUser', 'test')
 
     def mysqlCreate (self):
-        return test_sites_mysql_create(
+        return mysql_create(
             self.name, 
             self.getMySQLUser(), 
             'dummy'
             )
 
     def mysqlImport (self):
-        return test_sites_mysql_import(
+        return mysql_import(
             self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
             )
 
     def mysqlDump (self):
-        return test_sites_mysql_dump(
+        return mysql_dump(
             self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
             )
 
@@ -135,7 +135,7 @@ class TestSite:
         if not file_exists(out_dir):
             os.mkdir(out_dir)
         if self.options.has_key('gitSource'):
-            test_sites_git_checkout(
+            git_checkout(
                 self.path, 
                 self.options['gitSource'], 
                 self.options.get('gitBranch', 'HEAD')
@@ -145,9 +145,9 @@ class TestSite:
             shell_exec('cd {0}/run; git init')
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
-        test_sites_git_add_untracked(site.path)
-        test_sites_git_add_updated(site.path)
-        test_sites_git_commit(site.path)
+        git_add_untracked(site.path)
+        git_add_updated(site.path)
+        git_commit(site.path)
 
     def runTeardown (self):
         return shell_exec('rm {0}/run -rf'.format(self.path))
@@ -156,102 +156,101 @@ class TestSite:
         return self.options.get(u'httpHost', u'localhost:8089')
 
     def phpServerStart (self):
-        return test_sites_server_start(self.path, self.getHttpHost())
+        pid = server_start(self.path, self.getHttpHost())
+        if pid:
+            open(site.path+'/pid', 'w').write('{0}'.format(pid))
+            return True
 
-    def phpServerStop (self, pid):
-        return test_sites_server_stop(pid)
+        return False
 
+    def phpServerStop (self):
+        pid_file = self.path+'/pid'
+        if file_exists(pid_file):
+            server_stop(int(open(pid_file).read()))
+            os.unlink(pid_file)
+            return True
+
+        return False
 
 # commands
 
-def test_sites_error (message):
+def error (message):
     print ("! "+message+"\r\n")
 
-def test_sites_help ():
-    print (
-        "usage : \r\n"
-        "\r\n"
-        "\tphp test_sites.php (up|stop|start|test|dump|down|help) [name]\r\n"
-        "\r\n"
-        "\tphp test_sites.php run name\r\n"
-        "\r\n"
-        )
+def help ():
+    print ("see: https://github.com/unframed/test_sites.php\n")
 
-def test_sites_exists (argv):
+def exists (argv):
     if not len(argv) > 2:
-        test_sites_error('missing site name')
+        error('missing site name')
         exit(1)
 
     elif not file_exists('test/sites/'+argv[2]):
-        test_sites_error('site does not exist')
+        error('site does not exist')
         exit(2)
 
     else:
         return argv[2];
 
-def test_sites_up (site):
+def up (site):
     run_dir = site.path+'/run'
     if file_exists(run_dir):
-        test_sites_error('site is already up')
+        error('site is already up')
         exit(3)
 
     site.mysqlSetup()
     site.runSetup()
 
-def test_sites_start (site):
+def start (site):
     if file_exists(site.path+'/pid'):
-        test_sites_error('site is running, cannot start')
+        error('site may be running, cannot start')
         exit(6)
 
     if not file_exists(site.path+'/run'):
-        test_sites_error('site is down, cannot start')
+        error('site is down, cannot start')
         exit(7)
 
-    pid = test_sites_server_start(site.path, site.getHttpHost())
-    if (pid == False):
-        test_sites_error('could not fork a PHP server')
+    if not site.phpServerStart():
+        error('could not fork a PHP server')
         exit(8)
 
-    else:
-        open(site.path+'/pid', 'w').write('{0}'.format(pid))
-
-def test_sites_stop (site):
+def stop (site):
     if not file_exists(site.path+'/run'):
-        test_sites_error('site is down, cannot stop')
+        error('site is down, cannot stop')
         exit(9)
 
     pid_file = site.path+'/pid';
     if not file_exists(pid_file):
-        test_sites_error('site has already stopped')
+        error('site has already stopped')
         exit(10)
 
-    test_sites_server_stop(int(open(pid_file).read()))
-    os.unlink(pid_file)
+    site.phpServerStop()
 
-def test_sites_dump (site):
+def dump (site):
     out_dir = site.path + '/out'
-    if not file_exists(out_dir):
-        os.mkdir(out_dir)
+    if file_exists(out_dir):
+        shell_exec('rm {0}/out -rf'.format(site.path))
+    os.mkdir(out_dir)
     site.mysqlDump()
-    test_sites_run_dump(site.path)
+    run_dump(site.path)
 
-def test_sites_down (site):
+def down (site):
     if not file_exists(site.path+'/run'):
-        test_sites_error('site is already down')
+        error('site is already down')
         exit(5)
 
     pid_file = site.path+'/pid'
     if file_exists(pid_file):
-        test_sites_server_stop(int(open(pid_file).read()))
+        server_stop(int(open(pid_file).read()))
         os.unlink(pid_file)
-    test_sites_run_teardown(site.path)
+    run_teardown(site.path)
 
-def test_sites_test (site):
+def test (site):
     run_dir = site.path+'/run'
     if not file_exists(run_dir):
-        test_sites_up(site)
+        up(site)
     if not file_exists(site.path+'/pid'):
-        test_sites_start(site)
+        start(site)
     units = site.options.get(u'testUnits', [])
     for script in units:
         if script.endswith('.js'):
@@ -262,34 +261,34 @@ def test_sites_test (site):
         else:
             shell_exec(script)
 
-def test_sites_run (site):
-    test_sites_test(site)
-    test_sites_stop(site)
-    test_sites_dump(site)
-    test_sites_down(site)
+def run (site):
+    test(site)
+    stop(site)
+    dump(site)
+    down(site)
 
-def test_sites_unknown (site):
-    test_sites_error('unknwon command')
+def unknown (site):
+    error('unknwon command')
     exit(11)
 
-test_sites_commands = {
-    'up': test_sites_up,
-    'start': test_sites_start,
-    'stop': test_sites_stop,
-    'test': test_sites_test,
-    'dump': test_sites_dump,
-    'down': test_sites_down,
-    'run': test_sites_run,
-    'help': test_sites_help 
+COMMANDS = {
+    'up': up,
+    'start': start,
+    'stop': stop,
+    'test': test,
+    'dump': dump,
+    'down': down,
+    'run': run,
+    'help': help 
 }
 
 if __name__ == '__main__':
     import sys
     if not len(sys.argv) > 1:
-        test_sites_error('missing command')
+        error('missing command')
         exit(12)
 
     command = sys.argv[1]
-    site = TestSite(test_sites_exists(sys.argv))
-    test_sites_commands.get(command, test_sites_unknown)(site)
+    site = TestSite(exists(sys.argv))
+    COMMANDS.get(command, unknown)(site)
     exit(0);
