@@ -1,4 +1,4 @@
-import os, json, subprocess, MySQLdb
+import os, json, subprocess, MySQLdb, re
 
 # PHP lookalikes 
 
@@ -34,16 +34,20 @@ def test_sites_mysql_create (name, user, password):
         .format(name, user, password)
         )
 
-def test_sites_mysql_import (path, user, password, name):
+def test_sites_mysql_import (path, user, password, name, host):
     return shell_exec(
-        'unzip -p {0} | mysql -u {1} --password="{2}" {3}'
-        .format(path, user, password, name)
+        'unzip -p {0}/mysql.zip'
+        ' | sed s,127.0.0.1:80,{4},g'
+        ' | mysql -u {1} --password="{2}" {3}'
+        .format(path, user, password, name, host)
         )
 
-def test_sites_mysql_dump (path, user, password, name):
+def test_sites_mysql_dump (path, user, password, name, host):
     return shell_exec(
-        'mysqldump -u {1} -p{2} {3} | zip {0}/out/mysql.zip - '
-        .format(path, user, password, name)
+        'mysqldump -u {1} -p{2} {3}'
+        ' | sed s,{4},127.0.0.1:80,g'
+        ' | zip {0}/out/mysql.zip - '
+        .format(path, user, password, name, host)
         )
 
 def test_sites_git_checkout (path, source, branch):
@@ -54,22 +58,33 @@ def test_sites_git_checkout (path, source, branch):
         .format(source, path, branch)
         )
 
+def test_sites_git_add_untracked (path):
+    status = shell_exec('cd {0}/run; git status -s'.format(path))
+    for untracked in re.findall(r"[?]{2} (.+?)\n", status):
+        shell_exec('cd {0}/run; git add {1}'.format(path, untracked))
+
+def test_sites_git_add_updated (path):
+    status = shell_exec('cd {0}/run; git status -s'.format(path))
+    for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
+        shell_exec('cd {0}/run; git add {1}'.format(path, updated))
+
+def test_sites_git_commit (path):
+    status = shell_exec('cd {0}/run; git status -s'.format(path))
+    if status:
+        shell_exec('cd {0}/run; git commit -m "setup"'.format(path))
+
 def test_sites_run_dump (path):
-    if file_exists(path+'/run/.git'):
-        return shell_exec(
-            'cd {0}/run; git status -s > ../out/git_status'
-            .format(path)
-            )
+    test_sites_git_add_untracked(path)
+    status = shell_exec('cd {0}/run; git status -s'.format(path))
+    for updated in re.findall(r"(?:A|M)  (.+?)\n", status):
+        shell_exec('cd {0}; zip out/run.zip run/{1}'.format(path, updated))
 
 def test_sites_run_teardown (path):
-    return shell_exec('rm {0}/run -rf'.format(path))
+    shell_exec('rm {0}/run -rf'.format(path))
+    return True
 
 def test_sites_server_start (path, host):
-    return subprocess.Popen([
-        'php',
-        '-S', host, 
-        '-t', path + '/run'
-        ]).pid
+    return subprocess.Popen(['php', '-S', host, '-t', path + '/run']).pid
 
 def test_sites_server_stop (pid):
     os.kill(pid, 9)
@@ -102,12 +117,12 @@ class TestSite:
 
     def mysqlImport (self):
         return test_sites_mysql_import(
-            self.path, self.getMySQLUser(), 'dummy', self.name
+            self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
             )
 
     def mysqlDump (self):
         return test_sites_mysql_dump(
-            self.path, self.getMySQLUser(), 'dummy', self.name
+            self.path, self.getMySQLUser(), 'dummy', self.name, self.getHttpHost()
             )
 
     def mysqlSetup (self):
@@ -127,13 +142,12 @@ class TestSite:
                 )
         else:
             os.mkdir(self.path+'/run')
-        if file_exists(self.path+'/www'):
-            shell_exec('cp -r {0}/www/* {0}/run'.format(self.path))
-        if file_exists(self.path+'/run/.git'):
-            shell_exec(
-                'cd {0}/run; git status -s > ../out/git_status_up'
-                .format(self.path)
-                )
+            shell_exec('cd {0}/run; git init')
+        if file_exists(self.path+'/run.zip'):
+            shell_exec('cd {0}; unzip run.zip'.format(self.path))
+        test_sites_git_add_untracked(site.path)
+        test_sites_git_add_updated(site.path)
+        test_sites_git_commit(site.path)
 
     def runTeardown (self):
         return shell_exec('rm {0}/run -rf'.format(self.path))
