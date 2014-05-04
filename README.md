@@ -8,6 +8,10 @@ Synopsis
 ---
 Create a the `test/sites` and `test/units` directories.
 
+~~~bash
+./lamp init
+~~~
+
 You can specify the MySQL `root` user's password and the test MySQL user name by adding a `test_sites.json` configuration file in the directory `priv`.
 
 For instance :
@@ -27,14 +31,14 @@ This project includes a WordPress sample site in `test/sites/wordpress` :
 {
     "httpHost": "127.0.0.1:8089",
     "gitSource": "deps/wordpress",
-    "gitBranch": "3.8.3",
+    "gitBranch": "3.9",
     "testUnits": [
         "wp_install.js"
         ]
 }
 ~~~
 
-With this configuration the site will: use a shared repository found in `deps/wordpress` to checkout branch `3.8.3` as its `run` directory; which will be served by a PHP built-in server listening on `127.0.0.1:8089`; and the script `test/units/wp_install.js` will be executed by Casperjs when testing the site.
+With this configuration the site will: use a shared repository found in `deps/wordpress` to checkout branch `3.9` as its `run` directory; which will be served by a PHP built-in server listening on `127.0.0.1:8089`; and the script `test/units/wp_install.js` will be executed by Casperjs when testing the site.
 
 ### Run
 

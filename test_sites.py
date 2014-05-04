@@ -90,7 +90,7 @@ def server_stop (pid):
 
 class TestSite:
 
-    def __init__(self, name):
+    def __init__ (self, name):
         self.name = name
         self.path = 'test/sites/' + self.name
         self.options = {
@@ -101,7 +101,11 @@ class TestSite:
         if file_exists(config):
             self.options.update(json.loads(open(config).read()))
 
-    def isUp(self):
+    def init (self):
+        os.mkdir(self.path)
+        open(self.path+'/test_sites.json', 'w').write(json.dumps(self.options))
+
+    def isUp (self):
         return file_exists(self.path+'/run')
 
     def getMySQLUser (self):
@@ -128,7 +132,7 @@ class TestSite:
     def mysqlTeardown (self):
         pass
 
-    def runSetup(self):
+    def runSetup (self):
         out_dir = self.path + '/out'
         if not file_exists(out_dir):
             os.mkdir(out_dir)
@@ -203,6 +207,14 @@ class TestSite:
             shell_exec('rm {0} -rf'.format(out_dir))
         os.mkdir(out_dir)
 
+    def getStatus (self):
+        hasOutput = "O" if self.hasOutput() else " "
+        if not self.isUp():
+            return "_{0} {1}".format(hasOutput, self.name)
+        elif not self.isRunning():
+            return "U{0} {1}".format(hasOutput, self.name)
+        else:
+            return "R{0} {1} http://{2}/".format(hasOutput, self.name, self.getHttpHost())
 
 # commands
 
@@ -215,7 +227,7 @@ def help ():
 
 def exists (name):
     if not file_exists('test/sites/'+name):
-        error(1, 'site does not exist')
+        error(1, 'site {0} does not exist'.format(name))
 
     else:
         return name;
@@ -261,6 +273,12 @@ def down (site):
     site.httpServerStop()
     site.runTeardown()
 
+def init (site):
+    if file_exists(site.path):
+        error(10, 'site already exists')
+
+    site.init()
+
 def step (site):
     if not site.isUp():
         error(10, 'site is down, cannot step')
@@ -283,19 +301,14 @@ def run (site):
     down(site)
 
 def status (site):
-    hasOutput = "O" if site.hasOutput() else " "
-    if not site.isUp():
-        print "_{0} {1}".format(hasOutput, site.name)
-    elif not site.isRunning():
-        print "U{0} {1}".format(hasOutput, site.name)
-    else:
-        print "R{0} {1} http://{2}/".format(hasOutput, site.name, site.getHttpHost())
+    print site.getStatus()
 
 COMMANDS = {
     'status': status,
     'run': run,
     'test': test,
     'step': step,
+    'init': init,
     'up': up,
     'start': start,
     'stop': stop,
@@ -311,7 +324,15 @@ def cli(factory):
     elif COMMANDS.has_key(sys.argv[1]):
         command = COMMANDS[sys.argv[1]]
         if len(sys.argv) > 2:
-            command(factory(exists(sys.argv[2])))
+            if command == init:
+                command(factory(sys.argv[2]))
+            else:
+                command(factory(exists(sys.argv[2])))
+        elif command == COMMANDS['init']:
+            def createDir(path):
+                if not file_exists(path):
+                    os.mkdir(path)
+            map(createDir, ['test', 'test/sites', 'test/units'])
         else:
             for name in os.listdir('test/sites'):
                 command(factory(name))
