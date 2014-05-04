@@ -1,5 +1,5 @@
 test: ugly
-	./test_site run wordpress
+	./press run wordpress
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null
@@ -31,7 +31,7 @@ clean:
 
 install:
 	sudo apt-get install \
-		wget git php5 python python-mysqldb \
+		wget zipmerge git php5 python python-mysqldb \
 		mysql-client php5-mysql mysql-server \
 		# nodejs npm phantomjs
 	sudo mysql_secure_installation

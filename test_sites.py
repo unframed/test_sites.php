@@ -1,4 +1,4 @@
-import os, json, subprocess, MySQLdb, re
+import sys, os, json, subprocess, MySQLdb, re
 
 # PHP lookalikes 
 
@@ -101,6 +101,9 @@ class TestSite:
         if file_exists(config):
             self.options.update(json.loads(open(config).read()))
 
+    def isUp(self):
+        return file_exists(self.path+'/run')
+
     def getMySQLUser (self):
         return self.options.get('mysqlTestUser', 'test')
 
@@ -112,21 +115,18 @@ class TestSite:
             )
 
     def mysqlImport (self):
-        return mysql_import(
-            self.path, self.getMySQLUser(), 'dummy', self.name, 
-            ' | sed s,TEST_SITES_HOST,{0},g | '.format(self.getHttpHost())
-            )
+        return mysql_import(self.path, self.getMySQLUser(), 'dummy', self.name)
 
     def mysqlDump (self):
-        return mysql_dump(
-            self.path, self.getMySQLUser(), 'dummy', self.name, 
-            ' | sed s,{0},TEST_SITES_HOST,g | '.format(self.getHttpHost())
-            )
+        return mysql_dump(self.path, self.getMySQLUser(), 'dummy', self.name)
 
     def mysqlSetup (self):
         self.mysqlCreate()
         if file_exists(self.path+'/mysql.zip'):
             self.mysqlImport()
+
+    def mysqlTeardown (self):
+        pass
 
     def runSetup(self):
         out_dir = self.path + '/out'
@@ -147,13 +147,19 @@ class TestSite:
         git_add_updated(self.path)
         git_commit(self.path)
 
+    def runDump (self):
+        return run_dump(self.path)
+
     def runTeardown (self):
-        return shell_exec('rm {0}/run -rf'.format(self.path))
+        return run_teardown(self.path)
 
     def getHttpHost (self):
         return self.options.get(u'httpHost', u'localhost:8089')
 
-    def phpServerStart (self):
+    def isRunning (self):
+        return file_exists(self.path+'/pid')
+
+    def httpServerStart (self):
         pid = server_start(self.path, self.getHttpHost())
         if pid:
             open(self.path+'/pid', 'w').write('{0}'.format(pid))
@@ -161,7 +167,7 @@ class TestSite:
 
         return False
 
-    def phpServerStop (self):
+    def httpServerStop (self):
         pid_file = self.path+'/pid'
         if file_exists(pid_file):
             server_stop(int(open(pid_file).read()))
@@ -170,11 +176,39 @@ class TestSite:
 
         return False
 
+    def testSuite (self):
+        units = self.options.get(u'testUnits', [])
+        for script in units:
+            if script.endswith('.js'):
+                shell_exec(
+                    'deps/casperjs/bin/casperjs'
+                    ' test/units/{0} --name={1} --host={2} --mysqluser={3}'
+                    .format(script, self.name, self.getHttpHost(), self.getMySQLUser())
+                    )
+            else:
+                shell_exec(script)
+
+    def hasOutput (self):
+        return file_exists(self.path+'/out')
+
+    def mergeOutput (self):
+        shell_exec(
+            'cd {0} ; cp out/mysql.zip . ; zipmerge mysql.zip out/mysql.zip'
+            .format(self.path)
+            )
+
+    def cleanOutput (self):
+        out_dir = self.path + '/out'
+        if file_exists(out_dir):
+            shell_exec('rm {0} -rf'.format(out_dir))
+        os.mkdir(out_dir)
+
+
 # commands
 
 def error (code, message):
     print ("! "+message+"\r\n")
-    exit (code)
+    sys.exit(code)
 
 def help ():
     print ("see: https://github.com/unframed/test_sites.php\n")
@@ -187,66 +221,60 @@ def exists (name):
         return name;
 
 def up (site):
-    run_dir = site.path+'/run'
-    if file_exists(run_dir):
+    if site.isUp():
         error(2, 'site is already up')
 
     site.mysqlSetup()
     site.runSetup()
 
 def start (site):
-    if file_exists(site.path+'/pid'):
+    if site.isRunning():
         error(3, 'site may be running, cannot start')
 
-    if not file_exists(site.path+'/run'):
+    if not site.isUp():
         error(4, 'site is down, cannot start')
 
-    if not site.phpServerStart():
-        error(5, 'could not fork a PHP server')
+    if not site.httpServerStart():
+        error(5, 'could not start an HTTP server')
 
 def stop (site):
-    if not file_exists(site.path+'/run'):
+    if not site.isUp():
         error(6, 'site is down, cannot stop')
 
-    pid_file = site.path+'/pid';
-    if not file_exists(pid_file):
+    if not site.isRunning():
         error(7, 'site has already stopped')
 
-    site.phpServerStop()
+    site.httpServerStop()
 
 def dump (site):
-    out_dir = site.path + '/out'
-    if file_exists(out_dir):
-        shell_exec('rm {0}/out -rf'.format(site.path))
-    os.mkdir(out_dir)
+    if not site.isUp():
+        error(8, 'site is not up, nothing to dump')
+
+    site.cleanOutput()
     site.mysqlDump()
-    run_dump(site.path)
+    site.runDump()
 
 def down (site):
-    if not file_exists(site.path+'/run'):
-        error(8, 'site is already down')
+    if not site.isUp():
+        error(9, 'site is already down')
 
-    pid_file = site.path+'/pid'
-    if file_exists(pid_file):
-        server_stop(int(open(pid_file).read()))
-        os.unlink(pid_file)
-    run_teardown(site.path)
+    site.httpServerStop()
+    site.runTeardown()
+
+def step (site):
+    if not site.isUp():
+        error(10, 'site is down, cannot step')
+
+    dump(site)
+    down(site)
+    site.mergeOutput()
 
 def test (site):
-    run_dir = site.path+'/run'
-    if not file_exists(run_dir):
+    if not site.isUp():
         up(site)
-    if not file_exists(site.path+'/pid'):
+    if not site.isRunning():
         start(site)
-    units = site.options.get(u'testUnits', [])
-    for script in units:
-        if script.endswith('.js'):
-            shell_exec(
-                'deps/casperjs/bin/casperjs test/units/{0} --name={1} --host={2} --mysqluser={3}'
-                .format(script, site.name, site.getHttpHost(), site.getMySQLUser())
-                )
-        else:
-            shell_exec(script)
+    site.testSuite()
 
 def run (site):
     test(site)
@@ -254,31 +282,42 @@ def run (site):
     dump(site)
     down(site)
 
-def unknown (site):
-    error(9, 'unknwon command')
+def status (site):
+    hasOutput = "O" if site.hasOutput() else " "
+    if not site.isUp():
+        print "_{0} {1}".format(hasOutput, site.name)
+    elif not site.isRunning():
+        print "U{0} {1}".format(hasOutput, site.name)
+    else:
+        print "R{0} {1} http://{2}/".format(hasOutput, site.name, site.getHttpHost())
 
 COMMANDS = {
+    'status': status,
+    'run': run,
+    'test': test,
+    'step': step,
     'up': up,
     'start': start,
     'stop': stop,
-    'test': test,
     'dump': dump,
     'down': down,
-    'run': run,
     'help': help 
 }
 
 def cli(factory):
-    import sys
     if not len(sys.argv) > 1:
-        error(10, 'missing command')
+        for name in os.listdir('test/sites'):
+            status(factory(name))
+    elif COMMANDS.has_key(sys.argv[1]):
+        command = COMMANDS[sys.argv[1]]
+        if len(sys.argv) > 2:
+            command(factory(exists(sys.argv[2])))
+        else:
+            for name in os.listdir('test/sites'):
+                command(factory(name))
+    else:
+        error(10, 'unknwon command')
 
-    if not len(sys.argv) > 2:
-        error(11, 'missing site name')
-
-    command = sys.argv[1]
-    site = factory(exists(sys.argv[2]))
-    COMMANDS.get(command, unknown)(site)
     sys.exit(0);
 
 if __name__ == '__main__':
