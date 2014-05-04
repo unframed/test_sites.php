@@ -23,15 +23,22 @@ def mysql_create (name, user, password):
         user = "root", 
         passwd = _CONFIG.get(u'mysqlRootPass', u'')
         )
-    db.cursor().execute( 
-        "DROP DATABASE IF EXISTS {0} ;\n".format(name)
-        )
-    db.cursor().execute( 
+    return db.cursor().execute( 
         "CREATE DATABASE {0} ;\n"
         "GRANT ALL PRIVILEGES ON {0}.* TO "
         "{1}@localhost IDENTIFIED BY '{2}' ;\n"
         "FLUSH PRIVILEGES ;\n"
         .format(name, user, password)
+        )
+
+def mysql_drop (name, user, password):
+    db = MySQLdb.connect(
+        host = "localhost", 
+        user = user, 
+        passwd = password
+        )
+    return db.cursor().execute( 
+        "DROP DATABASE IF EXISTS {0} ;\n".format(name)
         )
 
 def mysql_import (path, user, password, name, pipe='|'):
@@ -103,7 +110,9 @@ class TestSite:
 
     def init (self):
         os.mkdir(self.path)
-        open(self.path+'/test_sites.json', 'w').write(json.dumps(self.options))
+        open(self.path+'/test_sites.json', 'w').write(
+            json.dumps(self.options, indent=4, sort_keys=True)
+            )
 
     def isUp (self):
         return file_exists(self.path+'/run')
@@ -121,16 +130,10 @@ class TestSite:
     def mysqlImport (self):
         return mysql_import(self.path, self.getMySQLUser(), 'dummy', self.name)
 
-    def mysqlDump (self):
-        return mysql_dump(self.path, self.getMySQLUser(), 'dummy', self.name)
-
     def mysqlSetup (self):
         self.mysqlCreate()
         if file_exists(self.path+'/mysql.zip'):
             self.mysqlImport()
-
-    def mysqlTeardown (self):
-        pass
 
     def runSetup (self):
         out_dir = self.path + '/out'
@@ -151,11 +154,21 @@ class TestSite:
         git_add_updated(self.path)
         git_commit(self.path)
 
-    def runDump (self):
-        return run_dump(self.path)
+    def setup (self):
+        self.mysqlSetup()
+        self.runSetup()
 
-    def runTeardown (self):
-        return run_teardown(self.path)
+    def dump (self):
+        return (
+            mysql_dump(self.path, self.getMySQLUser(), 'dummy', self.name),
+            run_dump(self.path)
+            )
+
+    def teardown (self):
+        return (
+            run_teardown(self.path),
+            mysql_drop(self.name, self.getMySQLUser(), 'dummy')
+            )
 
     def getHttpHost (self):
         return self.options.get(u'httpHost', u'localhost:8089')
@@ -193,12 +206,13 @@ class TestSite:
                 shell_exec(script)
 
     def hasOutput (self):
-        return file_exists(self.path+'/out')
+        out_dir = self.path+'/out'
+        return file_exists(out_dir) and len(os.listdir(out_dir)) > 0
 
-    def mergeOutput (self):
+    def mergeOutput (self, basedir='.'):
         shell_exec(
-            'cd {0} ; cp out/mysql.zip . ; zipmerge mysql.zip out/mysql.zip'
-            .format(self.path)
+            'cd {0} ; cp out/mysql.zip {1} ; zipmerge {1}/mysql.zip out/mysql.zip'
+            .format(self.path, basedir)
             )
 
     def cleanOutput (self):
@@ -236,8 +250,7 @@ def up (site):
     if site.isUp():
         error(2, 'site is already up')
 
-    site.mysqlSetup()
-    site.runSetup()
+    site.setup()
 
 def start (site):
     if site.isRunning():
@@ -263,15 +276,14 @@ def dump (site):
         error(8, 'site is not up, nothing to dump')
 
     site.cleanOutput()
-    site.mysqlDump()
-    site.runDump()
+    site.dump()
 
 def down (site):
     if not site.isUp():
         error(9, 'site is already down')
 
     site.httpServerStop()
-    site.runTeardown()
+    site.teardown()
 
 def init (site):
     if file_exists(site.path):
@@ -280,12 +292,22 @@ def init (site):
     site.init()
 
 def step (site):
-    if not site.isUp():
-        error(10, 'site is down, cannot step')
+    basedir = '.' if not len(sys.argv) > 3 else '../'+sys.argv[3]
+    if basedir == '.':
+        if not site.isUp():
+            error(11, 'site is down, cannot step')
 
-    dump(site)
-    down(site)
-    site.mergeOutput()
+        if not site.hasOutput():
+            error(12, 'site has no output to merge')
+
+        site.mergeOutput()
+    else:
+        if not site.isUp():
+            test(site)
+        if not site.hasOutput():
+            dump(site)
+        down(site)
+        site.mergeOutput(basedir)
 
 def test (site):
     if not site.isUp():
@@ -334,10 +356,9 @@ def cli(factory):
                     os.mkdir(path)
             map(createDir, ['test', 'test/sites', 'test/units'])
         else:
-            for name in os.listdir('test/sites'):
-                command(factory(name))
+            error(13, 'missing site name')
     else:
-        error(10, 'unknwon command')
+        error(14, 'unknwon command')
 
     sys.exit(0);
 

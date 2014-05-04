@@ -28,15 +28,6 @@ function wp_admin_install () {
     }, true);
 }
 
-function wp_login (username, password) {
-    return function () {
-        this.fillSelectors('form#loginform', {
-            'input#user_login': username,
-            'input#user_pass': password
-        }, true);
-    }
-}
-
 casper.start(
 	test_sites_root+'/wp-admin/setup-config.php?step=1', 
 	wp_admin_setup_config
@@ -45,10 +36,6 @@ casper.thenOpen(
 	test_sites_root+'/wp-admin/install.php',
 	wp_admin_install
 	);
-casper.thenOpen(
-    test_sites_root+'/wp-login.php', 
-    wp_login('admin', 'dummy')
-    );
 
 casper.run(function() {
     this.echo(this.getCurrentUrl()).exit();

@@ -1,1 +1,1 @@
-python test_sites.py $1 $2
+python test_sites.py $1 $2 $3

@@ -1,1 +1,6 @@
-{"testUnits": [], "httpHost": "127.0.0.1:8089"}
+{
+	"httpHost": "127.0.0.1:8090",
+	"testUnits": [
+		"wp_login.js"
+	]
+}
