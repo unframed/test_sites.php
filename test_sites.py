@@ -147,7 +147,7 @@ class TestSite:
                 )
         else:
             os.mkdir(self.path+'/run')
-            shell_exec('cd {0}/run; git init')
+            shell_exec('cd {0}/run; git init'.format(self.path))
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
         git_add_untracked(self.path)
@@ -196,14 +196,17 @@ class TestSite:
     def testSuite (self):
         units = self.options.get(u'testUnits', [])
         for script in units:
-            if script.endswith('.js'):
-                shell_exec(
-                    'deps/casperjs/bin/casperjs'
-                    ' test/units/{0} --name={1} --host={2} --mysqluser={3}'
-                    .format(script, self.name, self.getHttpHost(), self.getMySQLUser())
-                    )
-            else:
-                shell_exec(script)
+            try:
+                if script.endswith('.js'):
+                    shell_exec(
+                        'deps/casperjs/bin/casperjs'
+                        ' test/units/{0} --name={1} --host={2} --mysqluser={3}'
+                        .format(script, self.name, self.getHttpHost(), self.getMySQLUser())
+                        )
+                else:
+                    shell_exec(script)
+            except subprocess.CalledProcessError as e:
+                return '{0} failed : {1}'.format(script, e.output)
 
     def hasOutput (self):
         out_dir = self.path+'/out'
@@ -211,7 +214,7 @@ class TestSite:
 
     def mergeOutput (self, basedir='.'):
         shell_exec(
-            'cd {0} ; cp out/mysql.zip {1} ; zipmerge {1}/mysql.zip out/mysql.zip'
+            'cd {0} ; cp out/mysql.zip {1} ; zipmerge {1}/run.zip out/run.zip'
             .format(self.path, basedir)
             )
 
@@ -314,7 +317,9 @@ def test (site):
         up(site)
     if not site.isRunning():
         start(site)
-    site.testSuite()
+    failed = site.testSuite()
+    if failed:
+        error(13, failed)
 
 def run (site):
     test(site)
@@ -356,9 +361,9 @@ def cli(factory):
                     os.mkdir(path)
             map(createDir, ['test', 'test/sites', 'test/units'])
         else:
-            error(13, 'missing site name')
+            error(14, 'missing site name')
     else:
-        error(14, 'unknwon command')
+        error(15, 'unknwon command')
 
     sys.exit(0);
 

@@ -1,6 +1,6 @@
 test: ugly
 	./press step wordpress wp39installed
-	./press run wp39installed
+	# ./press up wp39installed
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null
