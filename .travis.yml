@@ -8,6 +8,8 @@ php:
 
 install:
   - sudo apt-get install -qq python-mysqldb zipmerge
+  - git config --global user.email "test@user"
+  - git config --global user.name "test user"
 
 before_script: 
   - npm install uglify-js
