@@ -212,11 +212,17 @@ class TestSite:
         out_dir = self.path+'/out'
         return file_exists(out_dir) and len(os.listdir(out_dir)) > 0
 
-    def mergeOutput (self, basedir='.'):
-        shell_exec(
-            'cd {0} ; cp out/mysql.zip {1} ; zipmerge {1}/run.zip out/run.zip'
-            .format(self.path, basedir)
-            )
+    def mergeOutput (self, target=None):
+        if target:
+            basedir = 'test/sites/'+target
+        else:
+            basedir = self.path
+        mysql_zip = self.path+'/out/mysql.zip'
+        if file_exists(mysql_zip):
+            shell_exec('cp {0} {1} ;'.format(mysql_zip, basedir))
+        run_zip = self.path+'/out/run.zip'
+        if (file_exists(run_zip)):
+            shell_exec('zipmerge {1}/run.zip {0}'.format(run_zip, basedir))
 
     def cleanOutput (self):
         out_dir = self.path + '/out'
@@ -295,8 +301,21 @@ def init (site):
     site.init()
 
 def step (site):
-    basedir = '.' if not len(sys.argv) > 3 else '../'+sys.argv[3]
-    if basedir == '.':
+    if len(sys.argv) > 3:
+        if not site.isUp():
+            test(site)
+        if not site.hasOutput():
+            dump(site)
+        down(site)
+        target = sys.argv[3]
+        target_dir = 'test/sites/'+target
+        if not file_exists(target_dir):
+            os.mkdir(target_dir)
+        target_config = target_dir + '/test_sites.json'
+        if not file_exists(target_config):
+            shell_exec('cp {0}/test_sites.json {1}'.format(site.path, target_config))
+        site.mergeOutput(target)
+    else:
         if not site.isUp():
             error(11, 'site is down, cannot step')
 
@@ -304,13 +323,6 @@ def step (site):
             error(12, 'site has no output to merge')
 
         site.mergeOutput()
-    else:
-        if not site.isUp():
-            test(site)
-        if not site.hasOutput():
-            dump(site)
-        down(site)
-        site.mergeOutput(basedir)
 
 def test (site):
     if not site.isUp():
