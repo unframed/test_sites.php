@@ -57,7 +57,7 @@ def git_checkout (path, source, branch):
     return shell_exec(
         'git clone --shared --no-checkout {0} {1}/run ;'
         ' cd {1}/run ;'
-        ' git checkout -q {2}'
+        ' git checkout -q -b {2}'
         .format(source, path, branch)
         )
 
