@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, MySQLdb, re
+import sys, os, json, subprocess, MySQLdb, re, string, getpass
 
 # PHP lookalikes 
 
@@ -93,6 +93,32 @@ def server_stop (pid):
     os.kill(pid, 9)
     return True
 
+def nginx_start (path, host):
+    name, port = host.split(':')
+    options = {
+        'test_sites_path': os.path.abspath(path),
+        'test_sites_host': name,
+        'test_sites_port': port,
+        'test_sites_user': getpass.getuser()
+        }
+    fpm = path + '/php-fpm.conf'
+    fpm_conf = path + '/out/php-fpm.conf'
+    template = string.Template(open(fpm).read())
+    open(fpm_conf, 'w').write(template.substitute(options))
+    nginx = path + '/nginx.conf'
+    nginx_conf = path + '/out/nginx.conf'
+    template = string.Template(open(nginx).read())
+    open(nginx_conf, 'w').write(template.substitute(options))
+    return (
+        shell_exec('sudo /usr/sbin/nginx -c '+os.path.abspath(nginx_conf)),
+        subprocess.Popen(['/usr/sbin/php5-fpm', '-y', fpm_conf]).pid
+        )
+
+def nginx_stop (nginx_pid, fpm_pid):
+    shell_exec('sudo kill -s QUIT {0}'.format(nginx_pid))
+    shell_exec('kill -s QUIT {0}'.format(fpm_pid))
+    return True # TODO: assert something about shell_exec's return
+
 # API
 
 class TestSite:
@@ -102,6 +128,7 @@ class TestSite:
         self.path = 'test/sites/' + self.name
         self.options = {
             u"httpHost": u"127.0.0.1:8089",
+            u"httpServer": u"php",
             u"testUnits": []
         }
         config = self.path + '/test_sites.json'
@@ -173,22 +200,37 @@ class TestSite:
     def getHttpHost (self):
         return self.options.get(u'httpHost', u'localhost:8089')
 
+    def getHttpServer (self):
+        return self.options.get(u'httpServer', u'php')
+
     def isRunning (self):
         return file_exists(self.path+'/pid')
 
     def httpServerStart (self):
-        pid = server_start(self.path, self.getHttpHost())
-        if pid:
-            open(self.path+'/pid', 'w').write('{0}'.format(pid))
-            return True
+        server = self.getHttpServer()
+        if server == 'php':
+            pid = server_start(self.path, self.getHttpHost())
+            if pid:
+                open(self.path+'/pid', 'w').write('{0}'.format(pid))
+        elif server == 'nginx':
+            fpm_pid, nginx_pid = nginx_start(self.path, self.getHttpHost())
+        return True
 
         return False
 
     def httpServerStop (self):
         pid_file = self.path+'/pid'
         if file_exists(pid_file):
-            server_stop(int(open(pid_file).read()))
-            os.unlink(pid_file)
+            pid = int(open(pid_file).read())
+            server = self.getHttpServer()
+            if server == u'php':
+                server_stop(pid)
+                os.unlink(pid_file)
+            elif server == u'nginx':
+                nginx_stop(pid, int(open(self.path+'/php-pid').read()))
+            else:
+                return False
+
             return True
 
         return False

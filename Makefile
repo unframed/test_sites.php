@@ -5,6 +5,7 @@ test: ugly
 	./press step wp39installed
 	./press down wp39installed
 	./press run wp39installed
+	./press run wp39nginx
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null
@@ -36,8 +37,12 @@ clean:
 
 install:
 	sudo apt-get install \
-		wget zipmerge git php5 python python-mysqldb \
-		mysql-client php5-mysql mysql-server \
-		# nodejs npm phantomjs
+		wget curl zip unzip zipmerge git \
+		python python-mysqldb \
+		nginx php5 php5-fpm php5-mysql \
+		mysql-client mysql-server \
+		# wheezy-backports : nodejs nodejs-legacy
+		# sid: nodejs npm phantomjs
 	sudo mysql_secure_installation
+	curl --insecure https://www.npmjs.org/install.sh | sudo sh
 	sudo npm install uglify-js -g

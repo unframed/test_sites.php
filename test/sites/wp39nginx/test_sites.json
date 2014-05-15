@@ -1,0 +1,10 @@
+{
+	"httpHost": "127.0.0.39:8089",
+	"httpServer": "nginx",
+	"gitSource": "deps/wordpress",
+	"gitBranch": "3.9",
+	"testUnits": [
+		"wp_install.js",
+		"wp_login.js"
+		]
+}

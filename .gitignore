@@ -3,4 +3,5 @@ deps
 test/sites/*/run
 test/sites/*/pid
 test/sites/*/out
+test/sites/*/tmp
 *.pyc
