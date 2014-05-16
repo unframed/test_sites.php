@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, MySQLdb, re, string, getpass
+import sys, os, json, subprocess, MySQLdb, re, string, getpass, time
 
 # PHP lookalikes 
 
@@ -212,9 +212,12 @@ class TestSite:
             pid = server_start(self.path, self.getHttpHost())
             if pid:
                 open(self.path+'/pid', 'w').write('{0}'.format(pid))
+                return True
+                
         elif server == 'nginx':
             fpm_pid, nginx_pid = nginx_start(self.path, self.getHttpHost())
-        return True
+            time.sleep(1) # make sure the web server is up & running before testing
+            return True
 
         return False
 
