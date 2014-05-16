@@ -213,9 +213,9 @@ class TestSite:
             if pid:
                 open(self.path+'/pid', 'w').write('{0}'.format(pid))
                 return True
-                
+
         elif server == 'nginx':
-            fpm_pid, nginx_pid = nginx_start(self.path, self.getHttpHost())
+            nginx_pid, fpm_pid = nginx_start(self.path, self.getHttpHost())
             time.sleep(1) # make sure the web server is up & running before testing
             return True
 
