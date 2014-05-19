@@ -7,7 +7,7 @@ php:
   - 5.4
 
 install:
-  - sudo apt-get install -qq python-mysqldb zipmerge nginx php5-fpm
+  - sudo apt-get install -qq zipmerge nginx php5-fpm
   - git config --global user.email "test@user"
   - git config --global user.name "test user"
 

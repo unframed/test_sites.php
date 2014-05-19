@@ -38,8 +38,7 @@ clean:
 install:
 	sudo apt-get install \
 		wget curl zip unzip zipmerge git \
-		python python-mysqldb \
-		nginx php5 php5-fpm php5-mysql \
+		python nginx php5 php5-fpm php5-mysql \
 		mysql-client mysql-server \
 		# wheezy-backports : nodejs nodejs-legacy
 		# sid: nodejs npm phantomjs
