@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, MySQLdb, re, string, getpass, time
+import sys, os, json, subprocess, re, string, getpass, time
 
 # PHP lookalikes 
 
@@ -17,29 +17,26 @@ else:
 
 # functions: Units (than can be tested simply)
 
+def mysql_root (script):
+    p = subprocess.Popen([
+        "mysql", 
+        "--user=root", 
+        "--password={0}".format(_CONFIG.get(u'mysqlRootPass', u''))
+        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    (stdout, stderr) = p.communicate(script)
+    p.stdin.close()
+    return stdout
+
 def mysql_create (name, user, password):
-    db = MySQLdb.connect(
-        host = "localhost", 
-        user = "root", 
-        passwd = _CONFIG.get(u'mysqlRootPass', u'')
-        )
-    return db.cursor().execute( 
+    return mysql_root((
         "CREATE DATABASE {0} ;\n"
         "GRANT ALL PRIVILEGES ON {0}.* TO "
         "{1}@localhost IDENTIFIED BY '{2}' ;\n"
         "FLUSH PRIVILEGES ;\n"
-        .format(name, user, password)
-        )
+        ).format(name, user, password))
 
 def mysql_drop (name, user, password):
-    db = MySQLdb.connect(
-        host = "localhost", 
-        user = user, 
-        passwd = password
-        )
-    return db.cursor().execute( 
-        "DROP DATABASE IF EXISTS {0} ;\n".format(name)
-        )
+    return mysql_root("DROP DATABASE IF EXISTS {0} ;\n".format(name))
 
 def mysql_import (path, user, password, name, pipe='|'):
     return shell_exec(

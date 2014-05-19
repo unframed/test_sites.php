@@ -31,9 +31,9 @@ deps/casperjs:
 	git clone https://github.com/n1k0/casperjs.git deps/casperjs
 
 clean:
-	rm deps/* -rf
-	rm test/sites/*/run -rf
-	rm test/sites/*/out -rf
+	rm -rf deps/*
+	rm -rf test/sites/*/run
+	rm -rf test/sites/*/out
 
 install:
 	sudo apt-get install \
