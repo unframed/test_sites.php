@@ -201,14 +201,14 @@ class TestSite:
         return self.options.get(u'httpServer', u'php')
 
     def isRunning (self):
-        return file_exists(self.path+'/pid')
+        return file_exists(self.path+'/out/pid')
 
     def httpServerStart (self):
         server = self.getHttpServer()
         if server == 'php':
             pid = server_start(self.path, self.getHttpHost())
             if pid:
-                open(self.path+'/pid', 'w').write('{0}'.format(pid))
+                open(self.path+'/out/pid', 'w').write('{0}'.format(pid))
                 return True
 
         elif server == 'nginx':
@@ -219,7 +219,7 @@ class TestSite:
         return False
 
     def httpServerStop (self):
-        pid_file = self.path+'/pid'
+        pid_file = self.path+'/out/pid'
         if file_exists(pid_file):
             pid = int(open(pid_file).read())
             server = self.getHttpServer()
@@ -227,7 +227,7 @@ class TestSite:
                 server_stop(pid)
                 os.unlink(pid_file)
             elif server == u'nginx':
-                nginx_stop(pid, int(open(self.path+'/php-pid').read()))
+                nginx_stop(pid, int(open(self.path+'/out/php-pid').read()))
             else:
                 return False
 
