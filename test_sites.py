@@ -125,10 +125,10 @@ def apache2_start (path, host):
     apache2_conf = path + '/out/apache2.conf'
     template = string.Template(open(apache2).read())
     open(apache2_conf, 'w').write(template.substitute(options))
-    return shell_exec('sudo /usr/sbin/apache2 -f '+os.path.abspath(apache2_conf))
+    return shell_exec('/usr/sbin/apache2 -f '+os.path.abspath(apache2_conf))
 
 def apache2_stop (apache2_pid):
-    shell_exec('sudo kill -s WINCH {0}'.format(apache2_pid))
+    shell_exec('kill -s WINCH {0}'.format(apache2_pid))
     return True # TODO: assert something about shell_exec's return
 
 # API
