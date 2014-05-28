@@ -90,14 +90,17 @@ def server_stop (pid):
     os.kill(pid, 9)
     return True
 
-def nginx_start (path, host):
+def http_options (path, host):
     name, port = host.split(':')
-    options = {
+    return {
         'test_sites_path': os.path.abspath(path),
         'test_sites_host': name,
         'test_sites_port': port,
         'test_sites_user': getpass.getuser()
         }
+
+def nginx_start (path, host):
+    options = http_options(path, host)
     fpm = path + '/php-fpm.conf'
     fpm_conf = path + '/out/php-fpm.conf'
     template = string.Template(open(fpm).read())
@@ -114,6 +117,18 @@ def nginx_start (path, host):
 def nginx_stop (nginx_pid, fpm_pid):
     shell_exec('sudo kill -s QUIT {0}'.format(nginx_pid))
     shell_exec('kill -s QUIT {0}'.format(fpm_pid))
+    return True # TODO: assert something about shell_exec's return
+
+def apache2_start (path, host):
+    options = http_options(path, host)
+    apache2 = path + '/apache2.conf'
+    apache2_conf = path + '/out/apache2.conf'
+    template = string.Template(open(apache2).read())
+    open(apache2_conf, 'w').write(template.substitute(options))
+    return shell_exec('sudo /usr/sbin/apache2 -f '+os.path.abspath(apache2_conf))
+
+def apache2_stop (apache2_pid):
+    shell_exec('sudo kill -s WINCH {0}'.format(apache2_pid))
     return True # TODO: assert something about shell_exec's return
 
 # API
@@ -205,18 +220,23 @@ class TestSite:
 
     def httpServerStart (self):
         server = self.getHttpServer()
-        if server == 'php':
+        if server == u'php':
             pid = server_start(self.path, self.getHttpHost())
             if pid:
                 open(self.path+'/out/pid', 'w').write('{0}'.format(pid))
                 return True
 
-        elif server == 'nginx':
-            nginx_pid, fpm_pid = nginx_start(self.path, self.getHttpHost())
+            return False
+        elif server == u'nginx':
+            nginx_start(self.path, self.getHttpHost())
             time.sleep(1) # make sure the web server is up & running before testing
-            return True
+        elif server == u'apache2':
+            apache2_start(self.path, self.getHttpHost())
+            time.sleep(1) # make sure the web server is up & running before testing
+        else:
+            return False
 
-        return False
+        return True
 
     def httpServerStop (self):
         pid_file = self.path+'/out/pid'
@@ -228,6 +248,8 @@ class TestSite:
                 os.unlink(pid_file)
             elif server == u'nginx':
                 nginx_stop(pid, int(open(self.path+'/out/php-pid').read()))
+            elif server == u'apache2':
+                apache2_stop(pid)
             else:
                 return False
 
