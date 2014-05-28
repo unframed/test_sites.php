@@ -5,7 +5,8 @@ test: ugly
 	./press step wp39installed
 	./press down wp39installed
 	./press run wp39installed
-	# ./press run wp39nginx
+	./press run wp39nginx
+	./press run wp39apache
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null

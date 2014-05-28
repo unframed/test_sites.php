@@ -28,10 +28,13 @@ function wp_admin_install () {
     }, true);
 }
 
-casper.start(
-	test_sites_root+'/wp-admin/setup-config.php?step=1', 
-	wp_admin_setup_config
-	);
+casper.start(test_sites_root, function() {
+    this.wait(1000);
+    });
+casper.thenOpen(
+    test_sites_root+'/wp-admin/setup-config.php?step=1', 
+    wp_admin_setup_config
+    );
 casper.thenOpen(
 	test_sites_root+'/wp-admin/install.php',
 	wp_admin_install
@@ -40,3 +43,4 @@ casper.thenOpen(
 casper.run(function() {
     this.echo(this.getCurrentUrl()).exit();
 });
+     

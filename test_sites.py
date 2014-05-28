@@ -229,10 +229,8 @@ class TestSite:
             return False
         elif server == u'nginx':
             nginx_start(self.path, self.getHttpHost())
-            time.sleep(1) # make sure the web server is up & running before testing
         elif server == u'apache2':
             apache2_start(self.path, self.getHttpHost())
-            time.sleep(1) # make sure the web server is up & running before testing
         else:
             return False
 

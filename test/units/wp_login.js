@@ -16,7 +16,11 @@ function wp_login (username, password) {
     }
 }
 
-casper.start(
+
+casper.start(test_sites_root, function() {
+    this.wait(1000);
+    });
+casper.thenOpen(
     test_sites_root+'/wp-login.php', 
     wp_login('admin', 'dummy')
     );
