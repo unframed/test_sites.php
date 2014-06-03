@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, re, string, getpass, time
+import sys, os, json, subprocess, re, string, getpass
 
 # PHP lookalikes 
 
@@ -157,7 +157,7 @@ class TestSite:
         return file_exists(self.path+'/run')
 
     def getMySQLUser (self):
-        return self.options.get('mysqlTestUser', 'test')
+        return self.options.get(u'mysqlTestUser', 'test')
 
     def mysqlCreate (self):
         return mysql_create(
@@ -178,15 +178,19 @@ class TestSite:
         out_dir = self.path + '/out'
         if not file_exists(out_dir):
             os.mkdir(out_dir)
-        if self.options.has_key('gitSource'):
+        if self.options.has_key(u'gitSource'):
             git_checkout(
                 self.path, 
-                self.options['gitSource'], 
-                self.options.get('gitBranch', 'HEAD')
+                self.options[u'gitSource'], 
+                self.options.get(u'gitBranch', 'HEAD')
                 )
         else:
             os.mkdir(self.path+'/run')
             shell_exec('cd {0}/run; git init'.format(self.path))
+        if self.options.has_key(u'links'):
+            for directory, link in self.options[u'links'].items():
+                if file_exists(directory):
+                    shell_exec('ln -s {1} {0}/{2}'.format(self.path, directory, link))
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
         git_add_untracked(self.path)
