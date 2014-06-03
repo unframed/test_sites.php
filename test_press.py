@@ -1,3 +1,6 @@
+import os, sys
+sys.path.append(os.path.abspath(os.pardir))
+
 import test_sites, re
 
 class TestPress (test_sites.TestSite):
