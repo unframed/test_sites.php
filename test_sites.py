@@ -190,7 +190,7 @@ class TestSite:
         if self.options.has_key(u'links'):
             for directory, link in self.options[u'links'].items():
                 if file_exists(directory):
-                    shell_exec('ln -s {1} {0}/{2}'.format(self.path, directory, link))
+                    shell_exec('ln -s {1} {0}/run/{2}'.format(self.path, directory, link))
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
         git_add_untracked(self.path)
