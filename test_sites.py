@@ -73,6 +73,15 @@ def git_commit (path):
     if status:
         shell_exec('cd {0}/run; git commit -m "setup"'.format(path))
 
+def run_links (path, links):
+    for (depth, directory, link) in [
+        (value.count('/'), key, value) for key, value in links
+        ].sort():
+        if file_exists(directory):
+            shell_exec('ln -s {1} {0}/run/{2}'.format(
+                path, os.path.abspath(directory), link
+                ))
+
 def run_dump (path):
     git_add_untracked(path)
     status = shell_exec('cd {0}/run; git status -s'.format(path))
@@ -188,13 +197,7 @@ class TestSite:
             os.mkdir(self.path+'/run')
             shell_exec('cd {0}/run; git init'.format(self.path))
         if self.options.has_key(u'links'):
-            for directory, link in self.options[u'links'].items():
-                if file_exists(directory):
-                    shell_exec('ln -s {1} {0}/run/{2}'.format(
-                        self.path, 
-                        os.path.abspath(directory), 
-                        link
-                        ))
+            run_links(self.path, self.options[u'links'])
         if file_exists(self.path+'/run.zip'):
             shell_exec('cd {0}; unzip run.zip'.format(self.path))
         git_add_untracked(self.path)
