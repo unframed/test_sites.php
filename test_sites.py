@@ -75,7 +75,7 @@ def git_commit (path):
 
 def run_links (path, links):
     sorted_links = [
-        (value.count('/'), key, value) for key, value in links
+        (value.count('/'), key, value) for key, value in links.items()
         ]
     sorted_links.sort()
     for (depth, directory, link) in sorted_links:
