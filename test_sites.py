@@ -74,9 +74,11 @@ def git_commit (path):
         shell_exec('cd {0}/run; git commit -m "setup"'.format(path))
 
 def run_links (path, links):
-    for (depth, directory, link) in [
+    sorted_links = [
         (value.count('/'), key, value) for key, value in links
-        ].sort():
+        ]
+    sorted_links.sort()
+    for (depth, directory, link) in sorted_links:
         if file_exists(directory):
             shell_exec('ln -s {1} {0}/run/{2}'.format(
                 path, os.path.abspath(directory), link
