@@ -75,13 +75,14 @@ def git_commit (path):
 
 def run_links (path, links):
     sorted_links = [
-        (value.count('/'), key, value) for key, value in links.items()
+        (value.count('/'), key, '{0}/run/{1}'.format(path, value)) 
+        for key, value in links.items()
         ]
     sorted_links.sort()
     for (depth, directory, link) in sorted_links:
-        if file_exists(directory):
-            shell_exec('ln -s {1} {0}/run/{2}'.format(
-                path, os.path.abspath(directory), link
+        if file_exists(directory) and not file_exists(link):
+            shell_exec('ln -s {0} {1}'.format(
+                os.path.abspath(directory), link
                 ))
 
 def run_dump (path):
