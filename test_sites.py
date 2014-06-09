@@ -91,7 +91,7 @@ def run_dump (path):
         shell_exec('cd {0}; zip out/run.zip run/{1}'.format(path, updated))
 
 def run_teardown (path):
-    shell_exec('rm {0}/run -rf'.format(path))
+    shell_exec('rm -rf {0}/run'.format(path))
     return True
 
 def server_start (path, host):
@@ -302,7 +302,7 @@ class TestSite:
     def cleanOutput (self):
         out_dir = self.path + '/out'
         if file_exists(out_dir):
-            shell_exec('rm {0} -rf'.format(out_dir))
+            shell_exec('rm -rf {0}'.format(out_dir))
         os.mkdir(out_dir)
 
     def getStatus (self):
