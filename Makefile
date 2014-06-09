@@ -10,6 +10,7 @@ test: ugly
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null
+	uglifyjs test/units/wp_login.js --lint > /dev/null
 
 DEPS = \
 	deps \
