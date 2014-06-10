@@ -5,10 +5,11 @@ test: ugly
 	./press test wordpress
 	./press step wordpress wp39installed
 	./press up wp39installed
+	./press start wp39installed
+	sleep 1.0
+	./press test wp39installed
 	./press dump wp39installed
 	./press step wp39installed
-	./press down wp39installed
-	./press run wp39installed
 	./press up wp39nginx
 	./press start wp39nginx
 	sleep 1.0
