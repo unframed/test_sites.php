@@ -6,24 +6,40 @@ Continuously test acceptance of PHP/MySQL sites.
 
 Synopsis
 ---
-Create a the `test/sites` and `test/units` directories.
+Specify the MySQL `root` user's password and the test MySQL user name by adding a `test_sites.json` configuration file in the directory `priv`.
 
-~~~bash
-./lamp init
-~~~
-
-You can specify the MySQL `root` user's password and the test MySQL user name by adding a `test_sites.json` configuration file in the directory `priv`.
-
-For instance :
+When no `priv/test_sites.json` configuration file exist the defaults are :
 
 ~~~json
 {
-    "mysqlRootPass": "password",
+    "mysqlRootPass": "",
     "mysqlTestUser": "test"
 }
 ~~~
 
-For each site, create a directory in `test/sites` and add a  `test_sites.json` configuration file in it.
+### Status
+
+To get the test sites status :
+
+~~~bash
+./lamp
+~~~
+
+### Init
+
+Create a `test/sites/mysite` directory with a `test_sites.json` default configuration once :
+
+~~~bash
+./lamp init mysite
+~~~
+
+Note that there is a WordPress extension for `lamp` called `press` that takes care of the particularities of WordPress beyond PHP/MySQL.
+
+~~~bash
+./press
+~~~
+
+You can cook your own extension and maybe address Drupal's or Joomla specifics by looking in `test_press.py` how to extend `test_sites.py`. 
 
 This project includes a WordPress sample site in `test/sites/wordpress` :
 
@@ -42,7 +58,7 @@ With this configuration the site will: use a shared repository found in `deps/wo
 
 ### Run
 
-Setup a site, start its server, run its test units, stop the server, dump its database and tear down the site.
+Setup a site, start its server, run its test units, stop the server, dump its full database and its test site's `run` repository changes to zip archives and finally tear down the site.
 
 ~~~bash
 ./press run wordpress
@@ -73,14 +89,15 @@ Use this command to dump a site's state for further testing
 
 ### Step
 
+Test a site and merge its input and output into a new site  
+
 ~~~bash
-./press
-cp test/sites/wordpress test/sites/wp39-installed
-./press test wp39-installed
-./press step wp39-installed
+./press test wordpress
+./press dump wordpress
+./press step wordpress wp39-installed
 ~~~
 
-Use this command to step build test cases step by step.
+Use this command to build one or more test cases step by step.
 
 ### Up
 
