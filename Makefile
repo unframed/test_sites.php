@@ -1,4 +1,7 @@
 test: ugly
+	./press up wordpress
+	./press start wordpress
+	./press test wordpress
 	./press step wordpress wp39installed
 	./press up wp39installed
 	./press dump wp39installed
