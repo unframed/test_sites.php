@@ -212,10 +212,7 @@ class TestSite:
         self.runSetup()
 
     def dump (self):
-        return (
-            mysql_dump(self.path, self.getMySQLUser(), 'dummy', self.name),
-            run_dump(self.path)
-            )
+        return (self.mysqlDump(), run_dump(self.path))
 
     def teardown (self):
         return (
