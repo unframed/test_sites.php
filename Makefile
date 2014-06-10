@@ -1,6 +1,7 @@
 test: ugly
 	./press up wordpress
 	./press start wordpress
+	sleep 1.0
 	./press test wordpress
 	./press step wordpress wp39installed
 	./press up wp39installed
@@ -8,8 +9,16 @@ test: ugly
 	./press step wp39installed
 	./press down wp39installed
 	./press run wp39installed
-	./press run wp39nginx
-	./press run wp39apache
+	./press up wp39nginx
+	./press start wp39nginx
+	sleep 1.0
+	./press test wp39nginx
+	./press down wp39nginx
+	./press up wp39apache
+	./press start wp39apache
+	sleep 1.0
+	./press test wp39apache
+	./press down wp39apache
 
 ugly: pull
 	uglifyjs test/units/wp_install.js --lint > /dev/null
