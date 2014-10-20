@@ -159,6 +159,7 @@ class TestSite:
             u"httpServer": u"php",
             u"testUnits": []
         }
+        self.options.update(_CONFIG)
         config = self.path + '/test_sites.json'
         if file_exists(config):
             self.options.update(json.loads(open(config).read()))
