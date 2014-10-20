@@ -1,6 +1,6 @@
 import sys, os, json, subprocess, re, string, getpass
 
-# PHP lookalikes 
+# PHP lookalikes
 
 def file_exists(filename):
     return os.path.exists(filename)
@@ -19,8 +19,8 @@ else:
 
 def mysql_root (script):
     p = subprocess.Popen([
-        "mysql", 
-        "--user=root", 
+        "mysql",
+        "--user=root",
         "--password={0}".format(_CONFIG.get(u'mysqlRootPass', u''))
         ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (stdout, stderr) = p.communicate(script)
@@ -75,7 +75,7 @@ def git_commit (path):
 
 def run_links (path, links):
     sorted_links = [
-        (value.count('/'), key, '{0}/run/{1}'.format(path, value)) 
+        (value.count('/'), key, '{0}/run/{1}'.format(path, value))
         for key, value in links.items()
         ]
     sorted_links.sort()
@@ -137,7 +137,11 @@ def apache2_start (path, host):
     apache2_conf = path + '/out/apache2.conf'
     template = string.Template(open(apache2).read())
     open(apache2_conf, 'w').write(template.substitute(options))
-    return shell_exec('/usr/sbin/apache2 -f '+os.path.abspath(apache2_conf))
+    return shell_exec(
+        '/usr/sbin/apache2'
+        +' -DSys'+sys.platform.capitalize()
+        +' -f '+os.path.abspath(apache2_conf)
+        )
 
 def apache2_stop (apache2_pid):
     shell_exec('kill -s WINCH {0}'.format(apache2_pid))
@@ -173,8 +177,8 @@ class TestSite:
 
     def mysqlCreate (self):
         return mysql_create(
-            self.name, 
-            self.getMySQLUser(), 
+            self.name,
+            self.getMySQLUser(),
             'dummy'
             )
 
@@ -192,8 +196,8 @@ class TestSite:
             os.mkdir(out_dir)
         if self.options.has_key(u'gitSource'):
             git_checkout(
-                self.path, 
-                self.options[u'gitSource'], 
+                self.path,
+                self.options[u'gitSource'],
                 self.options.get(u'gitBranch', 'HEAD')
                 )
         else:
@@ -426,7 +430,7 @@ COMMANDS = {
     'stop': stop,
     'dump': dump,
     'down': down,
-    'help': help 
+    'help': help
 }
 
 def cli(factory):
