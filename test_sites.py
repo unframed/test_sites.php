@@ -277,7 +277,7 @@ class TestSite:
             try:
                 if script.endswith('.js'):
                     shell_exec(
-                        'deps/casperjs/bin/casperjs'
+                        'deps/casperjs/bin/casperjs test'
                         ' test/units/{0} --name={1} --host={2} --mysqluser={3}'
                         .format(script, self.name, self.getHttpHost(), self.getMySQLUser())
                         )
