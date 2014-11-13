@@ -276,10 +276,12 @@ class TestSite:
         for script in units:
             try:
                 if script.endswith('.js'):
-                    shell_exec(
+                    subprocess.check_call(
                         'deps/casperjs/bin/casperjs test'
                         ' test/units/{0} --name={1} --host={2} --mysqluser={3}'
-                        .format(script, self.name, self.getHttpHost(), self.getMySQLUser())
+                        ' --verbose --log-level=warning'
+                        .format(script, self.name, self.getHttpHost(), self.getMySQLUser()),
+                        shell=True
                         )
                 else:
                     shell_exec(script)
