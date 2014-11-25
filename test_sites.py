@@ -103,7 +103,12 @@ def server_stop (pid):
     return True
 
 def http_options (path, host):
-    name, port = host.split(':')
+    name_port = host.split(':')
+    if len(name_port) == 2:
+        name, port = name_port
+    else:
+        name = name_port[0]
+        port = '80'
     return {
         'test_sites_path': os.path.abspath(path),
         'test_sites_host': name,
@@ -137,14 +142,21 @@ def apache2_start (path, host):
     apache2_conf = path + '/out/apache2.conf'
     template = string.Template(open(apache2).read())
     open(apache2_conf, 'w').write(template.substitute(options))
-    return shell_exec(
-        '/usr/sbin/apache2'
-        +' -DSys'+sys.platform.capitalize()
-        +' -f '+os.path.abspath(apache2_conf)
-        )
+    if (options['test_sites_port']=='80'):
+        return shell_exec(
+            'sudo /usr/sbin/apache2'
+            +' -DSys'+sys.platform.capitalize()
+            +' -f '+os.path.abspath(apache2_conf)
+            )
+    else:
+        return shell_exec(
+            '/usr/sbin/apache2'
+            +' -DSys'+sys.platform.capitalize()
+            +' -f '+os.path.abspath(apache2_conf)
+            )
 
 def apache2_stop (apache2_pid):
-    shell_exec('kill -s WINCH {0}'.format(apache2_pid))
+    shell_exec('sudo kill -s WINCH {0}'.format(apache2_pid))
     return True # TODO: assert something about shell_exec's return
 
 # API
