@@ -52,9 +52,7 @@ def mysql_dump (path, user, password, name, pipe='|'):
 
 def git_checkout (path, source, branch):
     return shell_exec(
-        'git clone --shared --no-checkout {0} {1}/run ;'
-        ' cd {1}/run ;'
-        ' git checkout -q -b {2}'
+        'git clone -q --shared --branch {2} {0} {1}/run'
         .format(source, path, branch)
         )
 
@@ -81,7 +79,7 @@ def run_links (path, links):
     sorted_links.sort()
     for (depth, directory, link) in sorted_links:
         if file_exists(directory) and not file_exists(link):
-            shell_exec('ln -s {0} {1}'.format(
+            shell_exec('ln -nsf {0} {1}'.format(
                 os.path.abspath(directory), link
                 ))
 
@@ -211,7 +209,7 @@ class TestSite:
             git_checkout(
                 self.path,
                 self.options[u'gitSource'],
-                self.options.get(u'gitBranch', 'HEAD')
+                self.options.get(u'gitBranch', 'master')
                 )
         else:
             os.mkdir(self.path+'/run')
@@ -333,66 +331,76 @@ class TestSite:
 
 # commands
 
-def error (code, message):
+def error (code, message, exitWithError):
     print ("! "+message+"\r\n")
-    sys.exit(code)
+    if exitWithError:
+        sys.exit(code)
 
 def help ():
     print ("see: https://github.com/unframed/test_sites.php\n")
 
 def exists (name):
     if not file_exists('test/sites/'+name):
-        error(1, 'site {0} does not exist'.format(name))
+        return error(1, 'site {0} does not exist'.format(name))
 
-    else:
-        return name;
+    return name;
 
-def up (site):
+def up (site, exitWithError=True):
     if site.isUp():
-        error(2, 'site is already up')
+        return error(2, 'site is already up', exitWithError)
 
     site.setup()
 
-def start (site):
+def start (site, exitWithError=True):
     if site.isRunning():
-        error(3, 'site may be running, cannot start')
+        return error(3, 'site may be running, cannot start', exitWithError)
 
     if not site.isUp():
-        error(4, 'site is down, cannot start')
+        return error(4, 'site is down, cannot start', exitWithError)
 
     if not site.httpServerStart():
-        error(5, 'could not start an HTTP server')
+        return error(5, 'could not start an HTTP server', exitWithError)
 
-def stop (site):
+def startup (site, exitWithError=True):
+    if site.isRunning():
+        return error(3, 'site may be running', exitWithError)
+
     if not site.isUp():
-        error(6, 'site is down, cannot stop')
+        site.setup()
+
+    if not site.httpServerStart():
+        return error(5, 'could not start an HTTP server', exitWithError)
+
+def stop (site, exitWithError=True):
+    if not site.isUp():
+        return error(6, 'site is down, cannot stop', exitWithError)
 
     if not site.isRunning():
-        error(7, 'site has already stopped')
+        return error(7, 'site has already stopped', exitWithError)
 
     site.httpServerStop()
 
 def dump (site):
     if not site.isUp():
-        error(8, 'site is not up, nothing to dump')
+        return error(8, 'site is not up, nothing to dump', True)
 
     site.cleanOutput()
     site.dump()
 
-def down (site):
+def down (site, exitWithError=True):
     if not site.isUp():
-        error(9, 'site is already down')
+        return error(9, 'site is already down', exitWithError)
 
     site.httpServerStop()
     site.teardown()
 
 def init (site):
     if file_exists(site.path):
-        error(10, 'site already exists')
+        error(10, 'site already exists', True)
 
     site.init()
 
-def step (site):
+def step (site, exitWithError=True):
     if len(sys.argv) > 3:
         if not site.isUp():
             test(site)
@@ -409,12 +417,16 @@ def step (site):
         site.mergeOutput(target)
     else:
         if not site.isUp():
-            error(11, 'site is down, cannot step')
+            return error(11, 'site is down, cannot step', exitWithError)
 
         if not site.hasOutput():
-            error(12, 'site has no output to merge')
+            return error(12, 'site has no output to merge', exitWithError)
 
         site.mergeOutput()
+
+def stepup (site):
+    step(site)
+    startup(site)
 
 def test (site):
     if not site.isUp():
@@ -423,7 +435,7 @@ def test (site):
         start(site)
     failed = site.testSuite()
     if failed:
-        error(13, failed)
+        error(13, failed, True)
 
 def run (site):
     test(site)
@@ -442,6 +454,8 @@ COMMANDS = {
     'init': init,
     'up': up,
     'start': start,
+    'startup': startup,
+    'stepup': stepup,
     'stop': stop,
     'dump': dump,
     'down': down,
@@ -455,7 +469,7 @@ def cli(factory):
     elif COMMANDS.has_key(sys.argv[1]):
         command = COMMANDS[sys.argv[1]]
         if len(sys.argv) > 2:
-            if command == init:
+            if command == COMMANDS['init']:
                 command(factory(sys.argv[2]))
             else:
                 command(factory(exists(sys.argv[2])))
@@ -464,10 +478,15 @@ def cli(factory):
                 if not file_exists(path):
                     os.mkdir(path)
             map(createDir, ['test', 'test/sites', 'test/units'])
+        elif command in (COMMANDS['stop'], COMMANDS['down']):
+            for name in os.listdir('test/sites'):
+                site = factory(name)
+                status(site)
+                command(site, False)
         else:
-            error(14, 'missing site name')
+            error(14, 'missing site name', True)
     else:
-        error(15, 'unknwon command')
+        error(15, 'unknwon command', True)
 
     sys.exit(0);
 
