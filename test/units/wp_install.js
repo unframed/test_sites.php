@@ -3,10 +3,10 @@
  */
 
 casper.test.begin('Install WordPress', 4, function suite (test) {
-    test_sites_name = casper.cli.options["name"],
-    test_sites_host = casper.cli.options["host"],
-    test_sites_mysqluser = casper.cli.options["mysqluser"],
-    test_sites_root = 'http://'+test_sites_host;
+    var test_sites_name = casper.cli.options["name"],
+        test_sites_host = casper.cli.options["host"],
+        test_sites_mysqluser = casper.cli.options["mysqluser"],
+        test_sites_root = 'http://'+test_sites_host;
     // test_sites_out = 'test/sites/'+test_sites_name+'/out/'
     casper.start(test_sites_root+'/wp-admin/setup-config.php?step=1');
     casper.then(function () {
