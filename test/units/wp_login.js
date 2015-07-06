@@ -7,8 +7,9 @@ casper.test.begin('Login as admin', 2, function suite (test) {
         test_sites_host = casper.cli.options["host"],
         test_sites_mysqluser = casper.cli.options["mysqluser"],
         test_sites_root = 'http://'+test_sites_host;
-        casper.start(test_sites_root+'/wp-login.php');
-    casper.then(function () {
+    casper.start();
+    casper.wait(1000);
+    casper.thenOpen(test_sites_root+'/wp-login.php', function () {
         test.assertHttpStatus(200, this.getCurrentUrl());
         this.fillSelectors('form#loginform', {
             'input#user_login': 'admin',
