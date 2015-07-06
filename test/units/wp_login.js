@@ -11,6 +11,8 @@ casper.test.begin('Login as admin', 2, function suite (test) {
     casper.wait(1000);
     casper.thenOpen(test_sites_root+'/wp-login.php', function () {
         test.assertHttpStatus(200, this.getCurrentUrl());
+    });
+    casper.then(function () {
         this.fillSelectors('form#loginform', {
             'input#user_login': 'admin',
             'input#user_pass': 'dummy'

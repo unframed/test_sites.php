@@ -13,6 +13,8 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
     casper.thenOpen(test_sites_root+'/wp-admin/setup-config.php?step=1', function () {
         // this.capture(test_sites_out+'wp_config_form.png');
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
+    });
+    casper.then(function () {
         this.fillSelectors('form', {
             'input[name="dbname"]': test_sites_name,
             'input[name="uname"]': test_sites_mysqluser,
@@ -28,6 +30,8 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
     casper.thenOpen(test_sites_root+'/wp-admin/install.php', function () {
         // this.capture(test_sites_out+'wp_install_form.png');
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
+    });
+    casper.then(function () {
         this.fillSelectors('form#setup', {
             'input#weblog_title': test_sites_name,
             'input#user_login': 'admin',
