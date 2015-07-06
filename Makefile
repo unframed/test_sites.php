@@ -1,19 +1,16 @@
 test: ugly
-	./press up wordpress
-	./press start wordpress
-	./press test wordpress
-	./press step wordpress wp39installed
-	./press up wp39installed
-	./press start wp39installed
-	./press test wp39installed
-	./press dump wp39installed
-	./press step wp39installed
-	./press up wp39nginx
-	./press start wp39nginx
-	./press test wp39nginx
-	./press down wp39nginx
-	./press up wp39apache
-	./press start wp39apache
+	#./press startup wordpress
+	#./press test wordpress
+	#./press step wordpress wp39installed
+	#./press startup wp39installed
+	#./press test wp39installed
+	#./press dump wp39installed
+	#./press step wp39installed
+	#./press up wp39nginx
+	#./press startup wp39nginx
+	#./press test wp39nginx
+	#./press down wp39nginx
+	./press startup wp39apache
 	./press test wp39apache
 	./press down wp39apache
 

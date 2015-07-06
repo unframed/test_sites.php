@@ -7,9 +7,10 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
     test_sites_host = casper.cli.options["host"],
     test_sites_mysqluser = casper.cli.options["mysqluser"],
     test_sites_root = 'http://'+test_sites_host;
+    // test_sites_out = 'test/sites/'+test_sites_name+'/out/'
     casper.start(test_sites_root+'/wp-admin/setup-config.php?step=1');
     casper.then(function () {
-        this.capture('wp_config_form.png');
+        // this.capture(test_sites_out+'wp_config_form.png');
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
         this.fillSelectors('form', {
             'input[name="dbname"]': test_sites_name,
@@ -20,11 +21,11 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
         }, true);
     });
     casper.then(function () {
-        this.capture('wp_config_response.png');
+        // this.capture(test_sites_out+'wp_config_response.png');
         test.assertHttpStatus(200, 'POST '+this.getCurrentUrl());
     });
     casper.thenOpen(test_sites_root+'/wp-admin/install.php', function () {
-        this.capture('wp_install_form.png');
+        // this.capture(test_sites_out+'wp_install_form.png');
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
         this.fillSelectors('form#setup', {
             'input#weblog_title': test_sites_name,
@@ -36,7 +37,7 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
         }, true);
     });
     casper.then(function () {
-        this.capture('wp_install_response.png');
+        // this.capture(test_sites_out+'wp_install_response.png');
         test.assertHttpStatus(200, 'POST '+this.getCurrentUrl());
     });
     casper.run(function () {
