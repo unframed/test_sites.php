@@ -153,8 +153,12 @@ def apache2_start (path, host):
             +' -f '+os.path.abspath(apache2_conf)
             )
 
-def apache2_stop (apache2_pid):
-    shell_exec('sudo kill -s WINCH {0}'.format(apache2_pid))
+def apache2_stop (apache2_pid, path, host):
+    options = http_options(path, host)
+    if (options['test_sites_port']=='80'):
+        shell_exec('sudo kill -s WINCH {0}'.format(apache2_pid))
+    else:
+        shell_exec('kill -s WINCH {0}'.format(apache2_pid))
     return True # TODO: assert something about shell_exec's return
 
 # API
@@ -273,7 +277,7 @@ class TestSite:
             elif server == u'nginx':
                 nginx_stop(pid, int(open(self.path+'/out/php-pid').read()))
             elif server == u'apache2':
-                apache2_stop(pid)
+                apache2_stop(pid, self.path, self.getHttpHost())
             else:
                 return False
 
