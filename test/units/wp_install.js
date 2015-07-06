@@ -42,6 +42,7 @@ casper.test.begin('Install WordPress', 2, function suite (test) {
         }
     }, function () {
         test.assertHttpStatus(200, 'POST '+this.getCurrentUrl());
+        this.debugPage();
     });
     /*
     casper.then(function () {
@@ -86,6 +87,7 @@ casper.test.begin('Install WordPress', 2, function suite (test) {
         }
     }, function () {
         test.assertHttpStatus(200, 'POST '+this.getCurrentUrl());
+        this.debugPage();
     });
     casper.run(function () {
         this.test.done();

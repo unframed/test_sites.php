@@ -13,6 +13,7 @@ casper.test.begin('Login as admin', 5, function suite (test) {
         test.assertHttpStatus(200, this.getCurrentUrl());
     });
     casper.then(function () {
+        this.debugPage();
         test.assertExists('form#loginform');
         test.assertExists('input#user_login');
         test.assertExists('input#user_pass');
