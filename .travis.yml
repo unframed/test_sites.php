@@ -4,14 +4,15 @@ language: php
 # list any PHP version you want to test against
 php:
   # using major version aliases
-  - 5.4
+  - 5.3
 
 install:
+  - sudo apt-get update
   - sudo apt-get install -qq zipmerge nginx php5-fpm
   - git config --global user.email "test@user"
   - git config --global user.name "test user"
 
-before_script: 
+before_script:
   - npm install uglify-js
 
 # omitting "script:" would default to phpunit
