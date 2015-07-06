@@ -11,9 +11,9 @@ install:
   - git config --global user.name "test user"
   - sudo apt-get update
   - sudo apt-get install -y --force-yes zipmerge nginx php5-fpm apache2 libapache2-mod-php5
-  - sudo /etc/init.d/apache2 stop
-  - sudo /etc/init.d/nginx stop
-  - sudo /etc/init.d/php-fpm stop
+  - sudo service apache2 stop
+  - sudo service nginx stop
+  - sudo service php-fpm stop
 before_script:
   - npm install uglify-js
 
