@@ -10,13 +10,7 @@ install:
   - git config --global user.email "test@user"
   - git config --global user.name "test user"
   - sudo apt-get update
-  - sudo apt-get install -qq zipmerge nginx php5-fpm
-  - sudo apt-get install -y --force-yes apache2
-  - echo "extension=memcache.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - printf "\n" | pecl install imagick
-  - echo "LoadModule php5_module $(pwd)/.phpenv/lib/libphp5.so" | sudo tee /etc/apache2/mods-available/php5.load
-  - sudo a2enmod rewrite
-  - sudo a2enmod php5
+  - sudo apt-get install -y --force-yes zipmerge nginx php5-fpm apache2 libapache2-mod-php5
 before_script:
   - npm install uglify-js
 
