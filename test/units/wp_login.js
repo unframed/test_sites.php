@@ -2,7 +2,7 @@
  * login WordPress with user name 'admin' and password 'dummy'.
  */
 
-casper.test.begin('Login as admin', 2, function suite (test) {
+casper.test.begin('Login as admin', 5, function suite (test) {
     var test_sites_name = casper.cli.options["name"],
         test_sites_host = casper.cli.options["host"],
         test_sites_mysqluser = casper.cli.options["mysqluser"],
@@ -13,6 +13,9 @@ casper.test.begin('Login as admin', 2, function suite (test) {
         test.assertHttpStatus(200, this.getCurrentUrl());
     });
     casper.then(function () {
+        test.assertExists('form#loginform');
+        test.assertExists('input#user_login');
+        test.assertExists('input#user_pass');
         this.fillSelectors('form#loginform', {
             'input#user_login': 'admin',
             'input#user_pass': 'dummy'

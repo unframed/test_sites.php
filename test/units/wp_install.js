@@ -2,7 +2,7 @@
  * Setup and install WordPress.
  */
 
-casper.test.begin('Install WordPress', 4, function suite (test) {
+casper.test.begin('Install WordPress', 17, function suite (test) {
     var test_sites_name = casper.cli.options["name"],
         test_sites_host = casper.cli.options["host"],
         test_sites_mysqluser = casper.cli.options["mysqluser"],
@@ -15,6 +15,12 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
     });
     casper.then(function () {
+        test.assertExists('form');
+        test.assertExists('input[name="dbname"]');
+        test.assertExists('input[name="uname"]');
+        test.assertExists('input[name="pwd"]');
+        test.assertExists('input[name="dbhost"]');
+        test.assertExists('input[name="prefix"]');
         this.fillSelectors('form', {
             'input[name="dbname"]': test_sites_name,
             'input[name="uname"]': test_sites_mysqluser,
@@ -32,6 +38,13 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
     });
     casper.then(function () {
+        test.assertExists('form#setup');
+        test.assertExists('input#weblog_title');
+        test.assertExists('input#user_login');
+        test.assertExists('input#pass1');
+        test.assertExists('input#pass2');
+        test.assertExists('input#admin_email');
+        test.assertExists('input[name="blog_public"]');
         this.fillSelectors('form#setup', {
             'input#weblog_title': test_sites_name,
             'input#user_login': 'admin',
