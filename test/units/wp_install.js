@@ -8,8 +8,9 @@ casper.test.begin('Install WordPress', 4, function suite (test) {
         test_sites_mysqluser = casper.cli.options["mysqluser"],
         test_sites_root = 'http://'+test_sites_host;
     // test_sites_out = 'test/sites/'+test_sites_name+'/out/'
-    casper.start(test_sites_root+'/wp-admin/setup-config.php?step=1');
-    casper.then(function () {
+    casper.start();
+    casper.wait(1000);
+    casper.thenOpen(test_sites_root+'/wp-admin/setup-config.php?step=1', function () {
         // this.capture(test_sites_out+'wp_config_form.png');
         test.assertHttpStatus(200, 'GET '+this.getCurrentUrl());
         this.fillSelectors('form', {
