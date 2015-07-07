@@ -4,7 +4,7 @@ language: php
 # list any PHP version you want to test against
 php:
   # using major version aliases
-  - 5.3
+  - 5.4
 
 install:
   - git config --global user.email "test@user"

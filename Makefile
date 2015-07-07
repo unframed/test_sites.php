@@ -1,6 +1,6 @@
 test: ugly
 	#./press startup wordpress
-	#./press test wordpress
+	./press test wordpress
 	#./press step wordpress wp39installed
 	#./press startup wp39installed
 	#./press test wp39installed
