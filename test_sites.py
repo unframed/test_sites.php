@@ -1,4 +1,4 @@
-import sys, os, json, subprocess, re, string, getpass
+import sys, os, json, subprocess, re, string, getpass, glob
 
 # PHP lookalikes
 
@@ -286,8 +286,16 @@ class TestSite:
         return False
 
     def testSuite (self):
-        units = self.options.get(u'testUnits', [])
-        for script in units:
+        phpSuite = glob.glob('./test/sites/{0}/suite/*.php'.format(self.name))
+        phpSuite.sort()
+        for script in phpSuite:
+            print '\ntest {0} {1}\n'.format(self.name, os.path.basename(script))
+            try:
+                subprocess.check_call('php {0}'.format(script), shell=True)
+            except subprocess.CalledProcessError as e:
+                return '{0} failed : {1}'.format(os.path.basename(script), e.output)
+        casperjsUnits = self.options.get(u'testUnits', [])
+        for script in casperjsUnits:
             try:
                 if script.endswith('.js'):
                     subprocess.check_call(
